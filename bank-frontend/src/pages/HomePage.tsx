@@ -13,7 +13,7 @@ export function HomePage() {
       <header className="enterprise-nav">
         <div className="enterprise-logo-wrap">
           <div className="enterprise-logo-dot"></div>
-          <span className="enterprise-logo-text">NBU Bank System</span>
+          <span className="enterprise-logo-text">BANKΛI | Unleash Your Assets</span>
         </div>
 
         <nav className="enterprise-nav-links" aria-label="Primary">
@@ -23,7 +23,7 @@ export function HomePage() {
         </nav>
 
         <Link to="/login" className="enterprise-btn enterprise-btn-secondary">
-          Employee & Customer Sign in
+          Sign in
         </Link>
       </header>
 
@@ -52,7 +52,7 @@ export function HomePage() {
 
             <div className="enterprise-metrics" aria-label="Business metrics">
               <article className="enterprise-metric-card">
-                <p className="enterprise-metric-value">99.95%</p>
+                <p className="enterprise-metric-value">97.95%</p>
                 <p className="enterprise-metric-label">Platform uptime</p>
               </article>
               <article className="enterprise-metric-card">
@@ -89,7 +89,7 @@ export function HomePage() {
               <h3>Online account access</h3>
               <p>Customers sign in with email and password, then continue to secure dashboard flows.</p>
             </article>
-            <article className="enterprise-info-card">
+            <article className="enterprise-infoard">
               <h3>Operational controls</h3>
               <p>Dedicated employee area for secure customer provisioning and lifecycle administration.</p>
             </article>
@@ -121,7 +121,7 @@ export function HomePage() {
       </main>
 
       <footer className="enterprise-footer">
-        <p>© 2026 NBU Bank System. All rights reserved.</p>
+        <p>© 2026 BANKAI Bank System. All rights reserved.</p>
         <p>Built for secure banking operations and trusted digital customer access.</p>
       </footer>
     </div>

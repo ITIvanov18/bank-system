@@ -37,7 +37,7 @@ public class SmtpOnboardingEmailService implements OnboardingEmailService {
                 + temporaryPassword + "\n\n"
                 + "For security reasons, you must change this password at first login.\n\n"
                 + "Regards,\n"
-                + "Bank System Team";
+                + "BankAi Team";
     }
 }
 

@@ -16,7 +16,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class CustomerAccountService {
 
     private static final String COUNTRY_CODE = "BG";
-    private static final String BANK_CODE = "BNCI";
+    private static final String BANK_CODE = "BNKI";
     private static final String BRANCH_CODE = "0001";
     private static final String ACCOUNT_TYPE = "10";
     private static final long MAX_ACCOUNT_SEQUENCE = 99_999_999L;
