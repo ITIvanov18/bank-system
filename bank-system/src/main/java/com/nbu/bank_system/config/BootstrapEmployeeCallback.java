@@ -10,6 +10,12 @@ import org.flywaydb.core.api.callback.Event;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Component;
 
+/**
+ * Flyway callback, който гарантира наличието на начален служител след миграциите
+ * Използва се JDBC директно, защото callback-ът работи по време на Flyway lifecycle,
+ * преди приложението да разчита спокойно на repository/service слоя
+ */
+
 @Component
 public class BootstrapEmployeeCallback extends BaseCallback {
 
@@ -19,6 +25,7 @@ public class BootstrapEmployeeCallback extends BaseCallback {
 
     @Override
     public boolean supports(Event event, Context context) {
+        // AFTER_MIGRATE означава, че schema-та вече е създадена и можe да се seed-ват данни
         return event == Event.AFTER_MIGRATE;
     }
 
@@ -38,6 +45,7 @@ public class BootstrapEmployeeCallback extends BaseCallback {
             checkStmt.setString(1, BOOTSTRAP_EMAIL);
             try (ResultSet rs = checkStmt.executeQuery()) {
                 if (rs.next()) {
+                    // Ако служителят вече съществува, обновяваме credentials за repeatable local setup
                     updateBootstrapEmployee(connection);
                     return;
                 }
@@ -51,6 +59,7 @@ public class BootstrapEmployeeCallback extends BaseCallback {
         String passwordHash = passwordEncoder.encode(BOOTSTRAP_PASSWORD);
         LocalDateTime now = LocalDateTime.now();
 
+        // Employee е моделиран като Customer със специална UserRole, за да използва общия auth механизъм
         String insertCustomerSql = """
                 INSERT INTO customers (
                     created_at, updated_at, customer_discriminator, customer_type,
@@ -74,11 +83,11 @@ public class BootstrapEmployeeCallback extends BaseCallback {
                 }
             }
 
-            insertIndividualCustomer(connection, customerId, now);
+            insertIndividualCustomer(connection, customerId);
         }
     }
 
-    private void insertIndividualCustomer(Connection connection, long customerId, LocalDateTime now) throws Exception {
+    private void insertIndividualCustomer(Connection connection, long customerId) throws Exception {
         String insertIndividualSql = """
                 INSERT INTO individual_customers (id, first_name, last_name, egn)
                 VALUES (?, 'System', 'Employee', '0000000000')

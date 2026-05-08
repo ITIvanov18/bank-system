@@ -1,13 +1,20 @@
 package com.nbu.bank_system;
 
-import org.junit.jupiter.api.Test;
-import org.springframework.boot.test.context.SpringBootTest;
+import static org.assertj.core.api.Assertions.assertThat;
 
-@SpringBootTest
+import org.junit.jupiter.api.Test;
+
+/**
+ * Лек smoke test за application class-а
+ * Не се стартира пълен Spring context тук, защото това би изисквало database.
+ * Реалният context + database flow се покрива от integration тестовете.
+ */
+
 class BankSystemApplicationTests {
 
 	@Test
-	void contextLoads() {
+	void applicationClassIsAvailable() {
+		assertThat(BankSystemApplication.class).isNotNull();
 	}
 
 }
