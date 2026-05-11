@@ -10,7 +10,7 @@ import org.springframework.stereotype.Component;
 /**
  * Централизира бизнес правилата за кредитните продукти
  * Тук държим reference/base условията за consumer и mortgage кредити,
- * както и адаптивното оскъпяване според сумата и срока
+ * както и адаптивната лихва според сумата и срока
  * Така контролерът и service слоят не съдържат hard-coded финансови правила
  */
 
@@ -18,12 +18,10 @@ import org.springframework.stereotype.Component;
 public class LoanProductPolicy {
 
     private static final int RATE_SCALE = 4;
-    private static final BigDecimal ONE_HUNDRED = BigDecimal.valueOf(100);
-
-    // Premium values са в процентни пунктове
-    // Пример: 0.75 означава +0.75% към годишната лихва
-    private static final BigDecimal MAX_AMOUNT_PREMIUM_PERCENTAGE_POINTS = BigDecimal.valueOf(0.75);
-    private static final BigDecimal MAX_TERM_PREMIUM_PERCENTAGE_POINTS = BigDecimal.valueOf(0.50);
+    private static final BigDecimal MORTGAGE_TERM_WEIGHT = BigDecimal.valueOf(0.80);
+    private static final BigDecimal MORTGAGE_AMOUNT_WEIGHT = BigDecimal.valueOf(0.20);
+    private static final BigDecimal CONSUMER_AMOUNT_WEIGHT = BigDecimal.valueOf(0.65);
+    private static final BigDecimal CONSUMER_TERM_WEIGHT = BigDecimal.valueOf(0.35);
 
     private final Map<LoanType, LoanProductTerms> termsByLoanType;
 
@@ -35,18 +33,28 @@ public class LoanProductPolicy {
                 new LoanProductTerms(
                         LoanType.CONSUMER,
                         BigDecimal.valueOf(6.25),
-                        BigDecimal.valueOf(50_000),
-                        84
+                        BigDecimal.valueOf(5.20),
+                        BigDecimal.valueOf(6.70),
+                        BigDecimal.valueOf(1_000),
+                        BigDecimal.valueOf(40_000),
+                        BigDecimal.valueOf(5),
+                        18,
+                        120
                 )
         );
 
-        // Ипотечен кредит: по-нисък reference rate, но по-висок лимит и по-дълъг срок
+        // Ипотечен кредит: променлива индикативна лихва между 2.25% и 3.45%.
         termsByLoanType.put(
                 LoanType.MORTGAGE,
                 new LoanProductTerms(
                         LoanType.MORTGAGE,
-                        BigDecimal.valueOf(3.00),
+                        BigDecimal.valueOf(2.85),
+                        BigDecimal.valueOf(2.25),
+                        BigDecimal.valueOf(3.45),
+                        BigDecimal.valueOf(3_000),
                         BigDecimal.valueOf(500_000),
+                        BigDecimal.valueOf(500),
+                        null,
                         360
                 )
         );
@@ -63,9 +71,28 @@ public class LoanProductPolicy {
     public void validateLoanRequest(LoanType loanType, BigDecimal principalAmount, int repaymentTermMonths) {
         LoanProductTerms terms = termsFor(loanType);
 
+        if (principalAmount.compareTo(terms.minimumPrincipalAmount()) < 0) {
+            throw new IllegalArgumentException(
+                    "Principal amount is below the minimum allowed amount for " + loanType + " loans."
+            );
+        }
+
         if (principalAmount.compareTo(terms.maximumPrincipalAmount()) > 0) {
             throw new IllegalArgumentException(
                     "Principal amount exceeds the maximum allowed amount for " + loanType + " loans."
+            );
+        }
+
+        if (!isValidPrincipalStep(terms, principalAmount)) {
+            throw new IllegalArgumentException(
+                    "Principal amount must use a valid increment for " + loanType + " loans."
+            );
+        }
+
+        if (terms.minimumRepaymentTermMonths() != null
+                && repaymentTermMonths < terms.minimumRepaymentTermMonths()) {
+            throw new IllegalArgumentException(
+                    "Repayment term is below the minimum allowed term for " + loanType + " loans."
             );
         }
 
@@ -83,23 +110,67 @@ public class LoanProductPolicy {
     ) {
         LoanProductTerms terms = termsFor(loanType);
 
-        // Utilization показва каква част от максимално разрешената сума/срок използва клиентът
-        // Колкото по-висок utilization, толкова по-висок adaptive annual interest rate
-        BigDecimal amountUtilization = principalAmount
-                .multiply(ONE_HUNDRED)
-                .divide(terms.maximumPrincipalAmount(), RATE_SCALE, RoundingMode.HALF_UP)
-                .divide(ONE_HUNDRED, RATE_SCALE, RoundingMode.HALF_UP);
-        BigDecimal termUtilization = BigDecimal.valueOf(repaymentTermMonths)
-                .multiply(ONE_HUNDRED)
-                .divide(BigDecimal.valueOf(terms.maximumRepaymentTermMonths()), RATE_SCALE, RoundingMode.HALF_UP)
-                .divide(ONE_HUNDRED, RATE_SCALE, RoundingMode.HALF_UP);
+        // Utilization показва каква част от допустимия диапазон за сума/срок използва клиентът.
+        // Потребителският кредит е по-скъп при малка сума и кратък срок.
+        // Ипотечният кредит тежи основно по срока, но включва и ценова отстъпка при по-голяма сума.
+        BigDecimal amountUtilization = calculateAmountUtilization(terms, principalAmount);
+        BigDecimal termUtilization = calculateTermUtilization(terms, repaymentTermMonths);
 
-        BigDecimal amountPremium = amountUtilization.multiply(MAX_AMOUNT_PREMIUM_PERCENTAGE_POINTS);
-        BigDecimal termPremium = termUtilization.multiply(MAX_TERM_PREMIUM_PERCENTAGE_POINTS);
+        if (loanType == LoanType.MORTGAGE) {
+            BigDecimal mortgageRiskScore = termUtilization.multiply(MORTGAGE_TERM_WEIGHT)
+                    .add(BigDecimal.ONE.subtract(amountUtilization).multiply(MORTGAGE_AMOUNT_WEIGHT))
+                    .min(BigDecimal.ONE)
+                    .max(BigDecimal.ZERO);
 
-        return terms.baseAnnualInterestRate()
-                .add(amountPremium)
-                .add(termPremium)
+            return terms.minimumAnnualInterestRate()
+                    .add(terms.maximumAnnualInterestRate()
+                            .subtract(terms.minimumAnnualInterestRate())
+                            .multiply(mortgageRiskScore))
+                    .setScale(RATE_SCALE, RoundingMode.HALF_UP);
+        }
+
+        BigDecimal consumerRiskScore = BigDecimal.ONE.subtract(amountUtilization).multiply(CONSUMER_AMOUNT_WEIGHT)
+                .add(BigDecimal.ONE.subtract(termUtilization).multiply(CONSUMER_TERM_WEIGHT))
+                .min(BigDecimal.ONE)
+                .max(BigDecimal.ZERO);
+
+        return terms.minimumAnnualInterestRate()
+                .add(terms.maximumAnnualInterestRate()
+                        .subtract(terms.minimumAnnualInterestRate())
+                        .multiply(consumerRiskScore))
                 .setScale(RATE_SCALE, RoundingMode.HALF_UP);
+    }
+
+    private boolean isValidPrincipalStep(LoanProductTerms terms, BigDecimal principalAmount) {
+        BigDecimal remainder = principalAmount
+                .subtract(terms.minimumPrincipalAmount())
+                .remainder(terms.principalStepAmount());
+        return remainder.compareTo(BigDecimal.ZERO) == 0;
+    }
+
+    private BigDecimal calculateAmountUtilization(LoanProductTerms terms, BigDecimal principalAmount) {
+        BigDecimal principalRange = terms.maximumPrincipalAmount().subtract(terms.minimumPrincipalAmount());
+        if (principalRange.compareTo(BigDecimal.ZERO) == 0) {
+            return BigDecimal.ZERO;
+        }
+
+        return principalAmount
+                .subtract(terms.minimumPrincipalAmount())
+                .max(BigDecimal.ZERO)
+                .divide(principalRange, RATE_SCALE, RoundingMode.HALF_UP)
+                .min(BigDecimal.ONE);
+    }
+
+    private BigDecimal calculateTermUtilization(LoanProductTerms terms, int repaymentTermMonths) {
+        int minimumTerm = terms.minimumRepaymentTermMonths() != null ? terms.minimumRepaymentTermMonths() : 1;
+        int termRange = terms.maximumRepaymentTermMonths() - minimumTerm;
+        if (termRange == 0) {
+            return BigDecimal.ZERO;
+        }
+
+        return BigDecimal.valueOf(repaymentTermMonths - minimumTerm)
+                .max(BigDecimal.ZERO)
+                .divide(BigDecimal.valueOf(termRange), RATE_SCALE, RoundingMode.HALF_UP)
+                .min(BigDecimal.ONE);
     }
 }

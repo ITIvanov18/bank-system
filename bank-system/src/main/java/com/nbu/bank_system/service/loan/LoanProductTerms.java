@@ -6,7 +6,12 @@ import java.math.BigDecimal;
 public record LoanProductTerms(
         LoanType loanType,
         BigDecimal baseAnnualInterestRate,
+        BigDecimal minimumAnnualInterestRate,
+        BigDecimal maximumAnnualInterestRate,
+        BigDecimal minimumPrincipalAmount,
         BigDecimal maximumPrincipalAmount,
+        BigDecimal principalStepAmount,
+        Integer minimumRepaymentTermMonths,
         int maximumRepaymentTermMonths
 ) {
 }
