@@ -64,7 +64,7 @@ class LoanGrantingServiceTest {
         assertThat(savedLoan.getInstallments()).hasSize(24);
         assertThat(response.customerId()).isEqualTo(7L);
         assertThat(response.loanType()).isEqualTo(LoanType.CONSUMER);
-        assertThat(response.annualInterestRate()).isGreaterThan(BigDecimal.valueOf(6.25));
+        assertThat(response.annualInterestRate()).isBetween(BigDecimal.valueOf(5.20), BigDecimal.valueOf(6.70));
         assertThat(response.repaymentSchedule()).hasSize(24);
         assertThat(response.repaymentSchedule().getLast().remainingBalance()).isEqualByComparingTo("0.00");
     }

@@ -134,7 +134,10 @@ class EmployeeLoanControllerIntegrationTest {
         Loan persistedLoan = loans.getFirst();
         assertThat(persistedLoan.getLoanType()).isEqualTo(LoanType.CONSUMER);
         assertThat(persistedLoan.getStatus()).isEqualTo(LoanStatus.ACTIVE);
-        assertThat(persistedLoan.getAnnualInterestRate()).isGreaterThan(BigDecimal.valueOf(6.25));
+        assertThat(persistedLoan.getAnnualInterestRate()).isBetween(
+                BigDecimal.valueOf(5.20),
+                BigDecimal.valueOf(6.70)
+        );
 
         assertThat(installmentRepository.findByLoanIdOrderByInstallmentNumberAsc(persistedLoan.getId()))
                 .hasSize(24)
@@ -174,8 +177,8 @@ class EmployeeLoanControllerIntegrationTest {
                 {
                   "customerId": %d,
                   "loanType": "CONSUMER",
-                  "principalAmount": 50000.01,
-                  "repaymentTermMonths": 84
+                  "principalAmount": 40000.01,
+                  "repaymentTermMonths": 120
                 }
                 """.formatted(customer.getId());
 
