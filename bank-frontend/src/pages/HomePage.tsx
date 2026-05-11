@@ -12,8 +12,13 @@ export function HomePage() {
 
       <header className="enterprise-nav">
         <div className="enterprise-logo-wrap">
-          <div className="enterprise-logo-dot"></div>
-          <span className="enterprise-logo-text">BANKΛI | Unleash Your Assets</span>
+          <span className="enterprise-logo-frame">
+            <img src="/bankai-logo.png" alt="BankAI" />
+          </span>
+          <div>
+            <span className="enterprise-logo-text">BankAI</span>
+            <span className="enterprise-logo-subtitle">Premium AI FinTech</span>
+          </div>
         </div>
 
         <nav className="enterprise-nav-links" aria-label="Primary">
@@ -89,7 +94,7 @@ export function HomePage() {
               <h3>Online account access</h3>
               <p>Customers sign in with email and password, then continue to secure dashboard flows.</p>
             </article>
-            <article className="enterprise-infoard">
+            <article className="enterprise-info-card">
               <h3>Operational controls</h3>
               <p>Dedicated employee area for secure customer provisioning and lifecycle administration.</p>
             </article>
