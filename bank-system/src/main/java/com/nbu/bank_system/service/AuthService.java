@@ -3,7 +3,9 @@ package com.nbu.bank_system.service;
 import com.nbu.bank_system.dto.auth.AuthResponse;
 import com.nbu.bank_system.dto.auth.ChangePasswordRequest;
 import com.nbu.bank_system.dto.auth.LoginRequest;
+import com.nbu.bank_system.domain.model.customer.CorporateCustomer;
 import com.nbu.bank_system.domain.model.customer.Customer;
+import com.nbu.bank_system.domain.model.customer.IndividualCustomer;
 import com.nbu.bank_system.repository.CustomerRepository;
 import com.nbu.bank_system.security.BankUserPrincipal;
 import com.nbu.bank_system.security.JwtService;
@@ -40,10 +42,23 @@ public class AuthService {
                 token,
                 customer.getId(),
                 customer.getEmail(),
+                resolveDisplayName(customer),
                 customer.getUserRole(),
                 customer.getCustomerType(),
                 customer.isFirstLogin()
         );
+    }
+
+    private String resolveDisplayName(Customer customer) {
+        if (customer instanceof IndividualCustomer individualCustomer) {
+            return individualCustomer.getFirstName() + " " + individualCustomer.getLastName();
+        }
+
+        if (customer instanceof CorporateCustomer corporateCustomer) {
+            return corporateCustomer.getCompanyName();
+        }
+
+        return customer.getEmail();
     }
 
     public void changePassword(String email, ChangePasswordRequest request) {

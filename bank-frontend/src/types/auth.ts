@@ -5,6 +5,7 @@ export interface AuthResponse {
   token: string;
   customerId: number;
   email: string;
+  displayName: string | null;
   role: UserRole;
   customerType: CustomerType | null;
   firstLogin: boolean;
@@ -28,6 +29,7 @@ export interface AuthSession {
   token: string;
   customerId: number;
   email: string;
+  displayName: string | null;
   role: UserRole;
   customerType: CustomerType | null;
   firstLogin: boolean;

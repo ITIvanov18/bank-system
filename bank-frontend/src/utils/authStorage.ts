@@ -39,10 +39,12 @@ function isValidSessionShape(value: unknown): value is AuthSession {
 
   const maybeSession = value as Partial<AuthSession>;
   const customerTypeValue = (value as Record<string, unknown>).customerType;
+  const displayNameValue = (value as Record<string, unknown>).displayName;
   return (
     typeof maybeSession.token === 'string' &&
     typeof maybeSession.customerId === 'number' &&
     typeof maybeSession.email === 'string' &&
+    (displayNameValue === null || typeof displayNameValue === 'string') &&
     (maybeSession.role === 'CUSTOMER' || maybeSession.role === 'EMPLOYEE') &&
     (customerTypeValue === undefined || customerTypeValue === null || customerTypeValue === 'INDIVIDUAL' || customerTypeValue === 'CORPORATE') &&
     typeof maybeSession.firstLogin === 'boolean'
@@ -54,6 +56,7 @@ export function saveSession(auth: AuthResponse): void {
     token: auth.token,
     customerId: auth.customerId,
     email: auth.email,
+    displayName: ('displayName' in auth) ? auth.displayName ?? null : null,
     role: auth.role,
     firstLogin: auth.firstLogin,
     ...(('customerType' in auth)

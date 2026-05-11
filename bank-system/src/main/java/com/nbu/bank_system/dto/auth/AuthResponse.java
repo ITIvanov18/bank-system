@@ -7,6 +7,7 @@ public record AuthResponse(
         String token,
         Long customerId,
         String email,
+        String displayName,
         UserRole role,
         CustomerType customerType,
         boolean firstLogin
