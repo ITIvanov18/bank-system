@@ -9,6 +9,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
 
+import java.util.Objects;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.times;
@@ -39,10 +41,28 @@ class SmtpOnboardingEmailServiceTest {
         SimpleMailMessage sentMessage = messageCaptor.getValue();
 
         assertEquals("no-reply@bank.bg", sentMessage.getFrom());
-        assertEquals("client@test.com", sentMessage.getTo()[0]);
+        assertEquals("client@test.com", Objects.requireNonNull(sentMessage.getTo())[0]);
         assertEquals("Your temporary online banking password", sentMessage.getSubject());
 
-        assertTrue(sentMessage.getText().contains("Ivan Ivanov"));
+        assertTrue(Objects.requireNonNull(sentMessage.getText()).contains("Ivan Ivanov"));
         assertTrue(sentMessage.getText().contains("TempPass123!"));
+    }
+
+    @Test
+    void testSendPasswordResetEmail() {
+        emailService.sendPasswordResetEmail("client@test.com", "Ivan Ivanov", "http://localhost:5173/reset-password?token=abc");
+
+        ArgumentCaptor<SimpleMailMessage> messageCaptor = ArgumentCaptor.forClass(SimpleMailMessage.class);
+
+        verify(mailSender, times(1)).send(messageCaptor.capture());
+
+        SimpleMailMessage sentMessage = messageCaptor.getValue();
+
+        assertEquals("no-reply@bank.bg", sentMessage.getFrom());
+        assertEquals("client@test.com", Objects.requireNonNull(sentMessage.getTo())[0]);
+        assertEquals("Reset your online banking password", sentMessage.getSubject());
+
+        assertTrue(Objects.requireNonNull(sentMessage.getText()).contains("Ivan Ivanov"));
+        assertTrue(sentMessage.getText().contains("http://localhost:5173/reset-password?token=abc"));
     }
 }

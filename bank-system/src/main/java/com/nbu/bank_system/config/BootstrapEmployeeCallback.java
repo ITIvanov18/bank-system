@@ -7,6 +7,7 @@ import java.time.LocalDateTime;
 import org.flywaydb.core.api.callback.BaseCallback;
 import org.flywaydb.core.api.callback.Context;
 import org.flywaydb.core.api.callback.Event;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Component;
 
@@ -19,9 +20,17 @@ import org.springframework.stereotype.Component;
 @Component
 public class BootstrapEmployeeCallback extends BaseCallback {
 
-    private static final String BOOTSTRAP_EMAIL = "employee@bank.local";
-    private static final String BOOTSTRAP_PASSWORD = "Employee@123";
     private final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
+    private final String bootstrapEmail;
+    private final String bootstrapPassword;
+
+    public BootstrapEmployeeCallback(
+            @Value("${app.bootstrap.employee.email:employee@bank.ai}") String bootstrapEmail,
+            @Value("${app.bootstrap.employee.password:Employee@123}") String bootstrapPassword
+    ) {
+        this.bootstrapEmail = bootstrapEmail.trim().toLowerCase();
+        this.bootstrapPassword = bootstrapPassword.trim();
+    }
 
     @Override
     public boolean supports(Event event, Context context) {
@@ -40,13 +49,12 @@ public class BootstrapEmployeeCallback extends BaseCallback {
     }
 
     private void ensureBootstrapEmployeeExists(Connection connection) throws Exception {
-        String checkSql = "SELECT id FROM customers WHERE LOWER(email) = LOWER(?) AND user_role = 'EMPLOYEE'";
+        String checkSql = "SELECT id FROM customers WHERE user_role = 'EMPLOYEE' ORDER BY id LIMIT 1";
         try (PreparedStatement checkStmt = connection.prepareStatement(checkSql)) {
-            checkStmt.setString(1, BOOTSTRAP_EMAIL);
             try (ResultSet rs = checkStmt.executeQuery()) {
                 if (rs.next()) {
                     // Ако служителят вече съществува, обновяваме credentials за repeatable local setup
-                    updateBootstrapEmployee(connection);
+                    updateBootstrapEmployee(connection, rs.getLong("id"));
                     return;
                 }
             }
@@ -56,7 +64,7 @@ public class BootstrapEmployeeCallback extends BaseCallback {
     }
 
     private void createBootstrapEmployee(Connection connection) throws Exception {
-        String passwordHash = passwordEncoder.encode(BOOTSTRAP_PASSWORD);
+        String passwordHash = passwordEncoder.encode(bootstrapPassword);
         LocalDateTime now = LocalDateTime.now();
 
         // Employee е моделиран като Customer със специална UserRole, за да използва общия auth механизъм
@@ -70,7 +78,7 @@ public class BootstrapEmployeeCallback extends BaseCallback {
         try (PreparedStatement stmt = connection.prepareStatement(insertCustomerSql, PreparedStatement.RETURN_GENERATED_KEYS)) {
             stmt.setObject(1, now);
             stmt.setObject(2, now);
-            stmt.setString(3, BOOTSTRAP_EMAIL);
+            stmt.setString(3, bootstrapEmail);
             stmt.setString(4, passwordHash);
             stmt.executeUpdate();
 
@@ -99,20 +107,20 @@ public class BootstrapEmployeeCallback extends BaseCallback {
         }
     }
 
-    private void updateBootstrapEmployee(Connection connection) throws Exception {
-        String passwordHash = passwordEncoder.encode(BOOTSTRAP_PASSWORD);
+    private void updateBootstrapEmployee(Connection connection, long customerId) throws Exception {
+        String passwordHash = passwordEncoder.encode(bootstrapPassword);
 
         String updateSql = """
                 UPDATE customers
-                SET email = ?, password_hash = ?, is_first_login = false, updated_at = ?
-                WHERE LOWER(email) = LOWER(?) AND user_role = 'EMPLOYEE'
+                SET email = ?, password_hash = ?, is_first_login = false, updated_at = ?, user_role = 'EMPLOYEE'
+                WHERE id = ?
                 """;
 
         try (PreparedStatement stmt = connection.prepareStatement(updateSql)) {
-            stmt.setString(1, BOOTSTRAP_EMAIL);
+            stmt.setString(1, bootstrapEmail);
             stmt.setString(2, passwordHash);
             stmt.setObject(3, LocalDateTime.now());
-            stmt.setString(4, BOOTSTRAP_EMAIL);
+            stmt.setLong(4, customerId);
             stmt.executeUpdate();
         }
     }

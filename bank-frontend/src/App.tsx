@@ -6,6 +6,7 @@ import { FirstLoginPage } from './pages/FirstLoginPage';
 import { HomePage } from './pages/HomePage';
 import { LoginPage } from './pages/LoginPage';
 import { AdminOnboardingPage } from './pages/AdminOnboardingPage';
+import { PasswordResetPage } from './pages/PasswordResetPage';
 
 function App() {
     return (
@@ -14,6 +15,7 @@ function App() {
             <Routes>
                 <Route path="/" element={<HomePage />} />
                 <Route path="/login" element={<LoginPage />} />
+                <Route path="/reset-password" element={<PasswordResetPage />} />
                 <Route
                     path="/first-login"
                     element={

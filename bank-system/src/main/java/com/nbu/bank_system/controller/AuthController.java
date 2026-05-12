@@ -4,6 +4,8 @@ import com.nbu.bank_system.dto.auth.AuthResponse;
 import com.nbu.bank_system.dto.auth.ChangePasswordRequest;
 import com.nbu.bank_system.dto.auth.ChangePasswordResponse;
 import com.nbu.bank_system.dto.auth.LoginRequest;
+import com.nbu.bank_system.dto.auth.PasswordResetRequest;
+import com.nbu.bank_system.dto.auth.ResetPasswordRequest;
 import com.nbu.bank_system.service.AuthService;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
@@ -26,6 +28,18 @@ public class AuthController {
     @PostMapping("/login")
     public ResponseEntity<AuthResponse> login(@Valid @RequestBody LoginRequest request) {
         return ResponseEntity.ok(authService.login(request));
+    }
+
+    @PostMapping("/password-reset/request")
+    public ResponseEntity<ChangePasswordResponse> requestPasswordReset(@Valid @RequestBody PasswordResetRequest request) {
+        authService.requestPasswordReset(request);
+        return ResponseEntity.ok(new ChangePasswordResponse("If an account exists for this email, a reset link has been sent."));
+    }
+
+    @PostMapping("/password-reset/confirm")
+    public ResponseEntity<ChangePasswordResponse> resetPassword(@Valid @RequestBody ResetPasswordRequest request) {
+        authService.resetPassword(request);
+        return ResponseEntity.ok(new ChangePasswordResponse("Password reset successfully"));
     }
 
     @PostMapping("/change-password")

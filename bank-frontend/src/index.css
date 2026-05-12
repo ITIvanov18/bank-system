@@ -437,6 +437,12 @@ body {
   color: #ef4444;
 }
 
+.status-banner-success {
+  background: rgba(34, 197, 94, 0.1);
+  border: 1px solid rgba(34, 197, 94, 0.2);
+  color: #16a34a;
+}
+
 .result-panel {
   margin-top: 1.4rem;
   border-radius: 16px;

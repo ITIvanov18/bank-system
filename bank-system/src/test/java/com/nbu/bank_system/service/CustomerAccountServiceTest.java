@@ -36,7 +36,7 @@ class CustomerAccountServiceTest {
     void testGetAccountStatus_Success() {
         String email = "test@bank.bg";
 
-        IndividualCustomer dummyCustomer = new IndividualCustomer("Ivan", "Ivanov", "0000000000");
+        IndividualCustomer dummyCustomer = new IndividualCustomer("Petko", "Totev", "7561300000");
         dummyCustomer.assignOnlineBankingCredentials(email, "hash123", true, UserRole.CUSTOMER);
 
         BankAccount mockAccount = new BankAccount(
@@ -65,9 +65,7 @@ class CustomerAccountServiceTest {
         String wrongEmail = "wrong@bank.bg";
         when(customerRepository.findByEmailIgnoreCase(wrongEmail)).thenReturn(Optional.empty());
 
-        BadCredentialsException exception = assertThrows(BadCredentialsException.class, () -> {
-            customerAccountService.getAccountStatus(wrongEmail);
-        });
+        BadCredentialsException exception = assertThrows(BadCredentialsException.class, () -> customerAccountService.getAccountStatus(wrongEmail));
 
         assertEquals("Authenticated user not found", exception.getMessage());
     }

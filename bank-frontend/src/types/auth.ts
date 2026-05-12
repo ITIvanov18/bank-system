@@ -21,6 +21,15 @@ export interface ChangePasswordRequest {
   newPassword: string;
 }
 
+export interface PasswordResetRequest {
+  email: string;
+}
+
+export interface ResetPasswordRequest {
+  token: string;
+  newPassword: string;
+}
+
 export interface ApiMessage {
   message: string;
 }

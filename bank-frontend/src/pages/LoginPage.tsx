@@ -107,6 +107,10 @@ export function LoginPage() {
         </form>
 
         <div className="auth-back-link">
+          <Link to="/reset-password" className="link-muted">Forgot password?</Link>
+        </div>
+
+        <div className="auth-back-link">
           <Link to="/" className="link-muted">← Back to home</Link>
         </div>
       </div>

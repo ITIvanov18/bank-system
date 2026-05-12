@@ -6,6 +6,7 @@ import com.nbu.bank_system.dto.auth.AuthResponse;
 import com.nbu.bank_system.dto.auth.ChangePasswordRequest;
 import com.nbu.bank_system.dto.auth.LoginRequest;
 import com.nbu.bank_system.repository.CustomerRepository;
+import com.nbu.bank_system.repository.PasswordResetTokenRepository;
 import com.nbu.bank_system.security.BankUserPrincipal;
 import com.nbu.bank_system.security.JwtService;
 import org.junit.jupiter.api.Test;
@@ -29,10 +30,16 @@ class AuthServiceTest {
     private CustomerRepository customerRepository;
 
     @Mock
+    private PasswordResetTokenRepository passwordResetTokenRepository;
+
+    @Mock
     private JwtService jwtService;
 
     @Mock
     private PasswordEncoder passwordEncoder;
+
+    @Mock
+    private OnboardingEmailService emailService;
 
     @InjectMocks
     private AuthService authService;
