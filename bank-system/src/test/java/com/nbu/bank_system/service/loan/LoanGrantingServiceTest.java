@@ -19,16 +19,9 @@ import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
-/**
- * Unit test за бизнес логиката за отпускане на кредит
- * Repository зависимостите са mock-нати, за да тестваме service orchestration-а без реална база данни
- * Импленентирано е Mockito, защото service-ът има външни dependencies,
- * но бизнес поведението му може да се провери изолирано от Spring context и HTTP
- */
 
 class LoanGrantingServiceTest {
 
-    // Mock обекти, за да се види какво връщат repository-тата без да пишем в базата данни
     private final CustomerRepository customerRepository = mock(CustomerRepository.class);
     private final LoanRepository loanRepository = mock(LoanRepository.class);
     private final LoanGrantingService loanGrantingService = new LoanGrantingService(
@@ -40,13 +33,11 @@ class LoanGrantingServiceTest {
 
     @Test
     void grantLoanCreatesActiveLoanWithGeneratedRepaymentSchedule() {
-        // Подготвяме customer и repository behavior, за да може service-ът да работи без грешки
         Customer customer = mock(Customer.class);
         when(customer.getId()).thenReturn(7L);
         when(customerRepository.findById(7L)).thenReturn(Optional.of(customer));
         when(loanRepository.save(any(Loan.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-        // Извикваме service метода директно, без HTTP и без Spring context
         LoanGrantResponse response = loanGrantingService.grantLoan(new GrantLoanRequest(
                 7L,
                 LoanType.CONSUMER,
@@ -54,8 +45,7 @@ class LoanGrantingServiceTest {
                 24
         ));
 
-        // ArgumentCaptor ни позволява да проверим какъв Loan entity е подаден към save()
-        ArgumentCaptor<Loan> loanCaptor = ArgumentCaptor.forClass(Loan.class);
+       ArgumentCaptor<Loan> loanCaptor = ArgumentCaptor.forClass(Loan.class);
         verify(loanRepository).save(loanCaptor.capture());
         Loan savedLoan = loanCaptor.getValue();
 

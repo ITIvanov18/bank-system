@@ -9,11 +9,7 @@ import java.time.LocalDate;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 
-/**
- * Unit tests за генератора на погасителни планове
- * Тези тестове не използват Spring context или database, защото проверяват чиста
- * financial calculation логика с цел прихващане на грешки във формулата.
- */
+
 
 class AnnuityRepaymentScheduleGeneratorTest {
 
@@ -21,7 +17,6 @@ class AnnuityRepaymentScheduleGeneratorTest {
 
     @Test
     void generateCreatesAnnuityScheduleWithDecreasingInterestAndIncreasingPrincipal() {
-        // Генерира едногодишен план с фиксирана главница и лихва
         List<Installment> installments = generator.generate(
                 BigDecimal.valueOf(10_000),
                 BigDecimal.valueOf(7.25),
@@ -35,12 +30,10 @@ class AnnuityRepaymentScheduleGeneratorTest {
 
         BigDecimal regularPayment = installments.getFirst().getMonthlyInstallmentAmount();
 
-        // При annuity repayment всички вноски са еднакви, с изключение на възможна rounding корекция в края
         assertThat(installments.subList(0, installments.size() - 1))
                 .allSatisfy(installment -> assertThat(installment.getMonthlyInstallmentAmount())
                         .isEqualByComparingTo(regularPayment));
 
-        // В началото лихвата е по-висока, а principal частта расте с намаляване на остатъка
         assertThat(installments.get(1).getInterestPart())
                 .isLessThan(installments.getFirst().getInterestPart());
         assertThat(installments.get(1).getPrincipalPart())
@@ -51,7 +44,6 @@ class AnnuityRepaymentScheduleGeneratorTest {
                 .map(Installment::getPrincipalPart)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
 
-        // Сумата на principal частите трябва да върне точно отпуснатата главница
         assertThat(totalPrincipal).isEqualByComparingTo("10000.00");
     }
 }

@@ -7,12 +7,6 @@ import com.nbu.bank_system.domain.enums.LoanType;
 import java.math.BigDecimal;
 import org.junit.jupiter.api.Test;
 
-/**
- * Unit tests за правилата на кредитните продукти
- * Те проверяват дали правилата за лихвени проценти, max суми и срокове са имплементирани
- * според договорените бизнес изисквания. Ако тези правила се променят, тестовете ще прихванат
- * несъответствията и ще ни помогнат да ги коригираме без да нарушим очакваното поведение на кредитните продукти
- */
 
 class LoanProductPolicyTest {
 
@@ -20,7 +14,6 @@ class LoanProductPolicyTest {
 
     @Test
     void calculateAnnualInterestRateGivesSmallDiscountForHigherAmount() {
-        // По-голямата сума получава по-добра лихва, ако срокът е еднакъв.
         BigDecimal smallerAmountRate = loanProductPolicy.calculateAnnualInterestRate(
                 LoanType.CONSUMER,
                 BigDecimal.valueOf(5_000),
@@ -37,7 +30,6 @@ class LoanProductPolicyTest {
 
     @Test
     void calculateAnnualInterestRateAddsPremiumForLongerTerm() {
-        // При потребителския продукт кратките и малки кредити са по-скъпи като индикативна лихва.
         BigDecimal shorterTermRate = loanProductPolicy.calculateAnnualInterestRate(
                 LoanType.CONSUMER,
                 BigDecimal.valueOf(20_000),
@@ -71,7 +63,6 @@ class LoanProductPolicyTest {
 
     @Test
     void termsForReturnsConfiguredMortgageReferenceValues() {
-        // Проверяваме reference условията, които са договорени като business requirement
         LoanProductTerms terms = loanProductPolicy.termsFor(LoanType.MORTGAGE);
 
         assertThat(terms.minimumAnnualInterestRate()).isEqualByComparingTo("2.25");
@@ -135,7 +126,6 @@ class LoanProductPolicyTest {
 
     @Test
     void validateLoanRequestRejectsPrincipalAboveProductMaximum() {
-        // Consumer loan не трябва да позволява сума над зададения maximum principal
         assertThatThrownBy(() -> loanProductPolicy.validateLoanRequest(
                 LoanType.CONSUMER,
                 BigDecimal.valueOf(40_000.01),
@@ -147,7 +137,6 @@ class LoanProductPolicyTest {
 
     @Test
     void validateLoanRequestRejectsTermAboveProductMaximum() {
-        // Mortgage loan не трябва да позволява срок над product maximum term
         assertThatThrownBy(() -> loanProductPolicy.validateLoanRequest(
                 LoanType.MORTGAGE,
                 BigDecimal.valueOf(100_000),

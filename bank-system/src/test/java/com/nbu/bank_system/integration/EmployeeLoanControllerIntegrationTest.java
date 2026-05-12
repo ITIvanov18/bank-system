@@ -32,11 +32,6 @@ import org.testcontainers.containers.MySQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
-/**
- * Integration tests за employee loan endpoint-а
- * Целта е да минем през реалните Spring MVC, Security, Service, Repository, JPA и Flyway слоеве.
- * Testcontainers стартира истински MySQL container, когато Docker е наличен.
- */
 
 @Testcontainers(disabledWithoutDocker = true)
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
@@ -68,11 +63,14 @@ class EmployeeLoanControllerIntegrationTest {
 
     @DynamicPropertySource
     static void registerTestProperties(DynamicPropertyRegistry registry) {
-        // Пренасочваме Spring datasource към Testcontainers базата
-        // и задаваме други необходими properties за тестовете
         registry.add("spring.datasource.url", MYSQL::getJdbcUrl);
         registry.add("spring.datasource.username", MYSQL::getUsername);
         registry.add("spring.datasource.password", MYSQL::getPassword);
+
+        registry.add("spring.flyway.enabled", () -> "false");
+       registry.add("spring.jpa.hibernate.ddl-auto", () -> "create");
+
+
         registry.add("spring.jpa.show-sql", () -> "false");
         registry.add("app.admin.secret", () -> "integration-test-secret");
         registry.add("spring.mail.host", () -> "localhost");
@@ -86,12 +84,10 @@ class EmployeeLoanControllerIntegrationTest {
 
     @BeforeEach
     void setUp() {
-        // Чистим таблиците преди всеки тест, за да няма зависимост от реда на изпълнение
         installmentRepository.deleteAll();
         loanRepository.deleteAll();
         customerRepository.deleteAll();
 
-        // Seed-ваме реален customer entity, върху който employee endpoint-ът отпуска кредит
         customer = new IndividualCustomer("Grigor", "Kamenov", "0248250090");
         customer.assignOnlineBankingCredentials(
                 "F115436@students.nbu.bg",
@@ -104,7 +100,6 @@ class EmployeeLoanControllerIntegrationTest {
 
     @Test
     void grantLoanPersistsLoanAndRepaymentScheduleThroughRealApplicationLayers() throws Exception {
-        // Този тест минава през HTTP слой с MockMvc и после проверява реалното database състояние
         String requestBody = """
                 {
                   "customerId": %d,
@@ -129,7 +124,6 @@ class EmployeeLoanControllerIntegrationTest {
 
         List<Loan> loans = loanRepository.findByCustomerIdOrderByCreatedAtDesc(customer.getId());
 
-        // Проверяваме persistence резултата, не само JSON response-а
         assertThat(loans).hasSize(1);
         Loan persistedLoan = loans.getFirst();
         assertThat(persistedLoan.getLoanType()).isEqualTo(LoanType.CONSUMER);
@@ -150,7 +144,6 @@ class EmployeeLoanControllerIntegrationTest {
 
     @Test
     void grantLoanRejectsRequestsWithoutEmployeeRole() throws Exception {
-        // Role-based access control: CUSTOMER няма право да използва employee endpoint
         String requestBody = """
                 {
                   "customerId": %d,
@@ -172,7 +165,6 @@ class EmployeeLoanControllerIntegrationTest {
 
     @Test
     void grantLoanRejectsAmountsAboveProductLimit() throws Exception {
-        // Business validation: request над product лимита трябва да върне 400 и да не записва Loan
         String requestBody = """
                 {
                   "customerId": %d,
