@@ -21,7 +21,7 @@ const loanProductLimits = {
     minimumPrincipalAmount: 1_000,
     maximumPrincipalAmount: 40_000,
     principalStepAmount: 5,
-    minimumRepaymentTermMonths: 18,
+    minimumRepaymentTermMonths: 12,
     maximumRepaymentTermMonths: 120,
     monthlyServiceFee: 2.5,
     upfrontFees: {
@@ -48,12 +48,69 @@ const loanProductLimits = {
 } as const;
 
 const monthsInYear = 12;
+type LoanProductLimits = typeof loanProductLimits[keyof typeof loanProductLimits];
 
 function formatMoney(value: number | null | undefined) {
   return `${(value ?? 0).toLocaleString('bg-BG', {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   })} EUR`;
+}
+
+function formatOptionalMoney(value: number | null) {
+  return value === null ? '-' : formatMoney(value);
+}
+
+function formatAmountLimits(product: LoanProductLimits) {
+  return `${formatMoney(product.minimumPrincipalAmount)} - ${formatMoney(product.maximumPrincipalAmount)}`;
+}
+
+function formatTermLimits(product: LoanProductLimits) {
+  if (product.minimumRepaymentTermMonths === null) {
+    return `No product minimum, up to ${product.maximumRepaymentTermMonths} months`;
+  }
+
+  return `${product.minimumRepaymentTermMonths} - ${product.maximumRepaymentTermMonths} months`;
+}
+
+function getLoanApplicationValidationMessage(loanApplicationDraft: LoanApplicationDraft) {
+  const product = loanProductLimits[loanApplicationDraft.loanType];
+  const principalAmount = Number(loanApplicationDraft.principalAmount);
+  const repaymentTermMonths = Number(loanApplicationDraft.repaymentTermMonths);
+
+  if (!Number.isFinite(principalAmount) || principalAmount <= 0) {
+    return 'Enter a valid loan amount.';
+  }
+
+  if (principalAmount < product.minimumPrincipalAmount) {
+    return `Minimum amount for ${product.label.toLowerCase()} is ${formatMoney(product.minimumPrincipalAmount)}.`;
+  }
+
+  if (principalAmount > product.maximumPrincipalAmount) {
+    return `Maximum amount for ${product.label.toLowerCase()} is ${formatMoney(product.maximumPrincipalAmount)}.`;
+  }
+
+  const stepRemainder = (principalAmount - product.minimumPrincipalAmount) % product.principalStepAmount;
+  if (Math.abs(stepRemainder) > 0.000001 && Math.abs(stepRemainder - product.principalStepAmount) > 0.000001) {
+    return `Amount must increase in steps of ${formatMoney(product.principalStepAmount)} for ${product.label.toLowerCase()}.`;
+  }
+
+  if (!Number.isInteger(repaymentTermMonths) || repaymentTermMonths <= 0) {
+    return 'Enter a valid repayment term in months.';
+  }
+
+  if (
+    product.minimumRepaymentTermMonths !== null
+    && repaymentTermMonths < product.minimumRepaymentTermMonths
+  ) {
+    return `Minimum term for ${product.label.toLowerCase()} is ${product.minimumRepaymentTermMonths} months.`;
+  }
+
+  if (repaymentTermMonths > product.maximumRepaymentTermMonths) {
+    return `Maximum term for ${product.label.toLowerCase()} is ${product.maximumRepaymentTermMonths} months.`;
+  }
+
+  return null;
 }
 
 function formatCustomerReference(customerId: number | null | undefined) {
@@ -157,21 +214,31 @@ export function DashboardPage() {
   const isAccountPanelLoading = !hasLoadedStatus || isLoadingStatus;
   const hasActiveAccount = accountStatus?.hasAccount && accountStatus.status === 'ACTIVE';
   const selectedLoanProduct = loanProductLimits[loanApplicationDraft.loanType];
-  const estimatedAnnualInterestRate = useMemo(
-    () => calculateEstimatedAnnualInterestRate(loanApplicationDraft),
+  const loanApplicationValidationMessage = useMemo(
+    () => getLoanApplicationValidationMessage(loanApplicationDraft),
     [loanApplicationDraft]
+  );
+  const estimatedAnnualInterestRate = useMemo(
+    () => loanApplicationValidationMessage ? null : calculateEstimatedAnnualInterestRate(loanApplicationDraft),
+    [loanApplicationDraft, loanApplicationValidationMessage]
   );
   const loanCalculation = useMemo(() => {
     const principalAmount = Number(loanApplicationDraft.principalAmount);
     const repaymentTermMonths = Number(loanApplicationDraft.repaymentTermMonths);
 
-    if (!Number.isFinite(principalAmount) || !Number.isFinite(repaymentTermMonths) || repaymentTermMonths <= 0) {
+    if (
+      loanApplicationValidationMessage
+      || estimatedAnnualInterestRate === null
+      || !Number.isFinite(principalAmount)
+      || !Number.isFinite(repaymentTermMonths)
+      || repaymentTermMonths <= 0
+    ) {
       return {
-        monthlyPayment: 0,
-        monthlyPaymentWithFee: selectedLoanProduct.monthlyServiceFee,
-        totalInterest: 0,
-        totalDueAmount: selectedLoanProduct.upfrontFees.analysis + selectedLoanProduct.upfrontFees.collateralAssessment,
-        apr: 0,
+        monthlyPayment: null,
+        monthlyPaymentWithFee: null,
+        totalInterest: null,
+        totalDueAmount: null,
+        apr: null,
       };
     }
 
@@ -193,7 +260,7 @@ export function DashboardPage() {
       totalDueAmount,
       apr,
     };
-  }, [estimatedAnnualInterestRate, loanApplicationDraft.principalAmount, loanApplicationDraft.repaymentTermMonths, selectedLoanProduct]);
+  }, [estimatedAnnualInterestRate, loanApplicationDraft.principalAmount, loanApplicationDraft.repaymentTermMonths, loanApplicationValidationMessage, selectedLoanProduct]);
 
   useEffect(() => {
     if (!session || session.role !== 'CUSTOMER') {
@@ -256,45 +323,8 @@ export function DashboardPage() {
   function handleLoanApplicationSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
-    const principalAmount = Number(loanApplicationDraft.principalAmount);
-    const repaymentTermMonths = Number(loanApplicationDraft.repaymentTermMonths);
-
-    if (!Number.isFinite(principalAmount) || principalAmount <= 0) {
-      setLoanApplicationMessage('Enter a valid loan amount.');
-      return;
-    }
-
-    if (principalAmount < selectedLoanProduct.minimumPrincipalAmount) {
-      setLoanApplicationMessage(`Minimum amount for ${selectedLoanProduct.label.toLowerCase()} is ${formatMoney(selectedLoanProduct.minimumPrincipalAmount)}.`);
-      return;
-    }
-
-    if (!Number.isInteger(repaymentTermMonths) || repaymentTermMonths <= 0) {
-      setLoanApplicationMessage('Enter a valid repayment term in months.');
-      return;
-    }
-
-    if (
-      selectedLoanProduct.minimumRepaymentTermMonths !== null
-      && repaymentTermMonths < selectedLoanProduct.minimumRepaymentTermMonths
-    ) {
-      setLoanApplicationMessage(`Minimum term for ${selectedLoanProduct.label.toLowerCase()} is ${selectedLoanProduct.minimumRepaymentTermMonths} months.`);
-      return;
-    }
-
-    if (principalAmount > selectedLoanProduct.maximumPrincipalAmount) {
-      setLoanApplicationMessage(`Maximum amount for ${selectedLoanProduct.label.toLowerCase()} is ${formatMoney(selectedLoanProduct.maximumPrincipalAmount)}.`);
-      return;
-    }
-
-    const stepRemainder = (principalAmount - selectedLoanProduct.minimumPrincipalAmount) % selectedLoanProduct.principalStepAmount;
-    if (Math.abs(stepRemainder) > 0.000001 && Math.abs(stepRemainder - selectedLoanProduct.principalStepAmount) > 0.000001) {
-      setLoanApplicationMessage(`Amount must increase in steps of ${formatMoney(selectedLoanProduct.principalStepAmount)} for ${selectedLoanProduct.label.toLowerCase()}.`);
-      return;
-    }
-
-    if (repaymentTermMonths > selectedLoanProduct.maximumRepaymentTermMonths) {
-      setLoanApplicationMessage(`Maximum term for ${selectedLoanProduct.label.toLowerCase()} is ${selectedLoanProduct.maximumRepaymentTermMonths} months.`);
+    if (loanApplicationValidationMessage) {
+      setLoanApplicationMessage(loanApplicationValidationMessage);
       return;
     }
 
@@ -433,6 +463,19 @@ export function DashboardPage() {
                 <span>Mortgage 2.25% - 3.45%</span>
               </div>
 
+              <div className="bank-product-limit-grid">
+                <div>
+                  <span>Consumer amount</span>
+                  <strong>{formatAmountLimits(loanProductLimits.CONSUMER)}</strong>
+                  <small>{formatTermLimits(loanProductLimits.CONSUMER)}</small>
+                </div>
+                <div>
+                  <span>Mortgage amount</span>
+                  <strong>{formatAmountLimits(loanProductLimits.MORTGAGE)}</strong>
+                  <small>{formatTermLimits(loanProductLimits.MORTGAGE)}</small>
+                </div>
+              </div>
+
               <button
                 type="button"
                 className="bank-primary-button bank-full-width-button"
@@ -477,7 +520,7 @@ export function DashboardPage() {
               </button>
             </div>
 
-            <form className="bank-loan-form" onSubmit={handleLoanApplicationSubmit}>
+            <form className="bank-loan-form" onSubmit={handleLoanApplicationSubmit} noValidate>
               <label className="form-field">
                 <span className="form-label">Loan type</span>
                 <select
@@ -489,6 +532,17 @@ export function DashboardPage() {
                   <option value="MORTGAGE">Mortgage loan</option>
                 </select>
               </label>
+
+              <div className="bank-selected-product-terms">
+                <div>
+                  <span>Allowed amount</span>
+                  <strong>{formatAmountLimits(selectedLoanProduct)}</strong>
+                </div>
+                <div>
+                  <span>Allowed term</span>
+                  <strong>{formatTermLimits(selectedLoanProduct)}</strong>
+                </div>
+              </div>
 
               <label className="form-field">
                 <span className="form-label">Amount</span>
@@ -503,6 +557,7 @@ export function DashboardPage() {
                   />
                   <span>EUR</span>
                 </div>
+                <p className="bank-field-hint">Allowed: {formatAmountLimits(selectedLoanProduct)}. Step: {formatMoney(selectedLoanProduct.principalStepAmount)}.</p>
               </label>
 
               <label className="form-field">
@@ -518,6 +573,7 @@ export function DashboardPage() {
                   />
                   <span>mo.</span>
                 </div>
+                <p className="bank-field-hint">Allowed: {formatTermLimits(selectedLoanProduct)}.</p>
               </label>
 
               <label className="form-field">
@@ -525,7 +581,8 @@ export function DashboardPage() {
                 <div className="bank-calculator-input bank-calculator-input-accent">
                   <input
                     type="number"
-                    value={estimatedAnnualInterestRate.toFixed(2)}
+                    value={estimatedAnnualInterestRate === null ? '' : estimatedAnnualInterestRate.toFixed(2)}
+                    placeholder="-"
                     readOnly
                   />
                   <span>%</span>
@@ -536,30 +593,30 @@ export function DashboardPage() {
                 <div className="bank-calculator-result-head">
                   <div>
                     <span>Monthly installment</span>
-                    <strong>{formatMoney(loanCalculation.monthlyPayment)}</strong>
+                    <strong>{formatOptionalMoney(loanCalculation.monthlyPayment)}</strong>
                   </div>
                   <div>
                     <span>APR (ГПР)</span>
-                    <strong>{loanCalculation.apr.toFixed(2)}%</strong>
+                    <strong>{loanCalculation.apr === null ? '-' : `${loanCalculation.apr.toFixed(2)}%`}</strong>
                   </div>
                 </div>
 
                 <dl className="bank-calculator-breakdown">
                   <div>
                     <dt>Credit term</dt>
-                    <dd>{Number(loanApplicationDraft.repaymentTermMonths) || 0} mo.</dd>
+                    <dd>{loanCalculation.apr === null ? '-' : `${Number(loanApplicationDraft.repaymentTermMonths)} mo.`}</dd>
                   </div>
                   <div>
                     <dt>Total due amount</dt>
-                    <dd>{formatMoney(loanCalculation.totalDueAmount)}</dd>
+                    <dd>{formatOptionalMoney(loanCalculation.totalDueAmount)}</dd>
                   </div>
                   <div>
                     <dt>Total interest</dt>
-                    <dd>{formatMoney(loanCalculation.totalInterest)}</dd>
+                    <dd>{formatOptionalMoney(loanCalculation.totalInterest)}</dd>
                   </div>
                   <div>
                     <dt>Interest rate</dt>
-                    <dd>{estimatedAnnualInterestRate.toFixed(2)}%</dd>
+                    <dd>{estimatedAnnualInterestRate === null ? '-' : `${estimatedAnnualInterestRate.toFixed(2)}%`}</dd>
                   </div>
                   <div>
                     <dt>Monthly service fee</dt>
@@ -580,15 +637,15 @@ export function DashboardPage() {
                 </dl>
               </div>
 
-              {loanApplicationMessage && (
-                <p className="bank-form-message">{loanApplicationMessage}</p>
+              {(loanApplicationMessage || loanApplicationValidationMessage) && (
+                <p className="bank-form-message">{loanApplicationMessage || loanApplicationValidationMessage}</p>
               )}
 
               <div className="bank-form-actions">
                 <button type="button" className="bank-ghost-button" onClick={() => setIsLoanApplicationOpen(false)}>
                   Cancel
                 </button>
-                <button type="submit" className="bank-primary-button">
+                <button type="submit" className="bank-primary-button" disabled={Boolean(loanApplicationValidationMessage)}>
                   Submit request
                 </button>
               </div>

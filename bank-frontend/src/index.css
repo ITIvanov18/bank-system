@@ -1267,6 +1267,39 @@ body {
   box-sizing: border-box;
 }
 
+.bank-product-limit-grid {
+  display: grid;
+  gap: 0.65rem;
+  margin-bottom: 1rem;
+}
+
+.bank-product-limit-grid div,
+.bank-selected-product-terms div {
+  display: grid;
+  gap: 0.25rem;
+  padding: 0.75rem;
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  border-radius: 8px;
+  background: rgba(2, 6, 23, 0.32);
+}
+
+.bank-product-limit-grid span,
+.bank-selected-product-terms span,
+.bank-product-limit-grid small,
+.bank-field-hint {
+  color: #9fb0c6;
+}
+
+.bank-product-limit-grid strong,
+.bank-selected-product-terms strong {
+  color: #f8fafc;
+}
+
+.bank-product-limit-grid small,
+.bank-field-hint {
+  line-height: 1.4;
+}
+
 .bank-next-list {
   margin: 0;
   padding-left: 1.1rem;
@@ -1420,6 +1453,16 @@ body {
 .bank-loan-form select.glass-input option {
   color: #0f172a;
   background: #f8fafc;
+}
+
+.bank-selected-product-terms {
+  display: grid;
+  gap: 0.65rem;
+}
+
+.bank-field-hint {
+  margin: 0.4rem 0 0;
+  font-size: 0.84rem;
 }
 
 .form-label-accent {
