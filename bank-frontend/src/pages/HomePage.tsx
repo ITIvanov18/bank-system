@@ -4,29 +4,71 @@ import '../index.css';
 export function HomePage() {
   return (
     <div className="enterprise-home">
+      {/* Добавяме вътрешен CSS за стилните бутони в навигацията */}
+      <style>
+        {`
+          .custom-nav-pill {
+            padding: 0.5rem 1.2rem;
+            border-radius: 20px;
+            text-decoration: none;
+            color: #333;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            display: inline-block;
+          }
+          .custom-nav-pill:hover {
+            transform: translateY(-2px);
+          }
+
+
+
+          /* Стил за бутон СВЕТЛО СИН (About Us) */
+          .custom-nav-pill-blue-light {
+            background-color: rgba(0, 123, 255, 0.1); /* Много светъл син фон */
+            color: #007bff; /* Светло син текст */
+          }
+          .custom-nav-pill-blue-light:hover {
+            background-color: rgba(0, 123, 255, 0.2); /* Леко по-тъмен фон на ховър */
+          }
+        `}
+      </style>
+
       <div className="background-shapes">
         <div className="shape shape-1"></div>
         <div className="shape shape-2"></div>
         <div className="shape shape-3"></div>
       </div>
 
-      <header className="enterprise-nav">
-        <div className="enterprise-logo-wrap">
-          <span className="enterprise-logo-frame">
-            <img src="/bankai-logo.png" alt="BankAI" />
-          </span>
-          <div>
-            <span className="enterprise-logo-text">BankAI</span>
-            <span className="enterprise-logo-subtitle">Premium AI FinTech</span>
+      <header className="enterprise-nav" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+
+        {/* ЛЯВА ЧАСТ: Лого + Навигация (групирани заедно) */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '3rem' }}>
+
+          {/* ЛОГО И ТЕКСТ */}
+          <div className="enterprise-logo-wrap" style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+            {/* По-малко лого (w: 60px), без тъмен фон */}
+            <img
+              src="/bankai-logo.png"
+              alt="BANKλI"
+              style={{ width: '60px', height: 'auto', background: 'transparent' }}
+            />
+            <div>
+
+              <span className="enterprise-logo-text" style={{ fontSize: '1.8rem', fontWeight: 'bold' }}>BANKλI</span>
+              <span className="enterprise-logo-subtitle" style={{ display: 'block' }}>Premium AI FinTech</span>
+            </div>
           </div>
+
+          {/* НАВИГАЦИОННИ БУТОНИ */}
+          <nav aria-label="Primary" style={{ display: 'flex', gap: '1rem' }}>
+
+            <a href="#security" className="custom-nav-pill custom-nav-pill-blue-light">Security</a>
+
+            <Link to="/about" className="custom-nav-pill custom-nav-pill-blue-light">About Us</Link>
+          </nav>
         </div>
 
-        <nav className="enterprise-nav-links" aria-label="Primary">
-          <a href="#products">Products</a>
-          <a href="#security">Security</a>
-          <a href="#support">Support</a>
-        </nav>
-
+        {/* ДЯСНА ЧАСТ: Sign in */}
         <Link to="/login" className="enterprise-btn enterprise-btn-secondary">
           Sign in
         </Link>
@@ -34,19 +76,23 @@ export function HomePage() {
 
       <main className="enterprise-main">
         <section className="enterprise-hero enterprise-section">
-          <div className="enterprise-hero-content">
-            <div className="brand-badge">Trusted digital banking</div>
+
+
+         <div className="enterprise-hero-content">
+         <div className="brand-badge">Trusted digital banking</div>
 
             <h1 className="main-title enterprise-title">
               Enterprise-grade banking
               <span className="gradient-text"> for modern customers</span>
             </h1>
 
-            <p className="subtitle enterprise-subtitle">
+            {/* СИМЕТРИЧЕН ТЕКСТ: Центриран и с ограничен max-width, за да изглежда като красив параграф */}
+            <p className="subtitle enterprise-subtitle" style={{maxWidth: '700px', margin: '0 auto', lineHeight: '1.6' }}>
               Secure onboarding, reliable account access, and production-ready controls for customer and employee workflows.
             </p>
 
-            <div className="enterprise-hero-actions">
+
+            <div className="enterprise-hero-actions" style={{ marginTop: '2rem' }}>
               <Link to="/login" className="enterprise-btn enterprise-btn-primary">
                 Access online banking
               </Link>
@@ -72,7 +118,7 @@ export function HomePage() {
           </div>
 
           <aside className="enterprise-highlight-panel" aria-label="Core capabilities">
-            <h2>Banking workspace</h2>
+            <h2><b>Banking workspace</b></h2>
             <p>One secure environment for onboarding, first login password reset, and day-to-day banking operations.</p>
             <ul>
               <li>JWT-based authentication and protected routes</li>
@@ -126,7 +172,7 @@ export function HomePage() {
       </main>
 
       <footer className="enterprise-footer">
-        <p>© 2026 BANKAI Bank System. All rights reserved.</p>
+        <p>© 2026 BλNKλI Bank System. All rights reserved.</p>
         <p>Built for secure banking operations and trusted digital customer access.</p>
       </footer>
     </div>
