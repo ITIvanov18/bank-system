@@ -44,14 +44,14 @@ public class LoanProductPolicy {
                 )
         );
 
-        // Ипотечен кредит: променлива индикативна лихва между 2.25% и 3.45%.
+        // Ипотечен кредит: променлива индикативна лихва между 2.65% и 3.45%.
         termsByLoanType.put(
                 LoanType.MORTGAGE,
                 new LoanProductTerms(
                         LoanType.MORTGAGE,
-                        BigDecimal.valueOf(4.75),
-                        BigDecimal.valueOf(3.10),
-                        BigDecimal.valueOf(6.85),
+                        BigDecimal.valueOf(3.05),
+                        BigDecimal.valueOf(2.65),
+                        BigDecimal.valueOf(3.45),
                         BigDecimal.valueOf(3_000),
                         BigDecimal.valueOf(500_000),
                         BigDecimal.valueOf(500),

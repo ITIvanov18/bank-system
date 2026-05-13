@@ -75,8 +75,8 @@ class LoanProductPolicyTest {
     void termsForReturnsConfiguredMortgageReferenceValues() {
         LoanProductTerms terms = loanProductPolicy.termsFor(LoanType.MORTGAGE);
 
-        assertThat(terms.minimumAnnualInterestRate()).isEqualByComparingTo("3.10");
-        assertThat(terms.maximumAnnualInterestRate()).isEqualByComparingTo("6.85");
+        assertThat(terms.minimumAnnualInterestRate()).isEqualByComparingTo("2.65");
+        assertThat(terms.maximumAnnualInterestRate()).isEqualByComparingTo("3.45");
         assertThat(terms.minimumPrincipalAmount()).isEqualByComparingTo("3000");
         assertThat(terms.maximumPrincipalAmount()).isEqualByComparingTo("500000");
         assertThat(terms.principalStepAmount()).isEqualByComparingTo("500");
@@ -97,8 +97,8 @@ class LoanProductPolicyTest {
                 360
         );
 
-        assertThat(shortTermRate).isBetween(BigDecimal.valueOf(3.10), BigDecimal.valueOf(6.85));
-        assertThat(longTermRate).isBetween(BigDecimal.valueOf(3.10), BigDecimal.valueOf(6.85));
+        assertThat(shortTermRate).isBetween(BigDecimal.valueOf(2.65), BigDecimal.valueOf(3.45));
+        assertThat(longTermRate).isBetween(BigDecimal.valueOf(2.65), BigDecimal.valueOf(3.45));
     }
 
     @Test
@@ -119,8 +119,8 @@ class LoanProductPolicyTest {
                 180
         );
 
-        assertThat(veryShortSmallMortgageRate).isGreaterThan(BigDecimal.valueOf(6.00));
-        assertThat(veryShortLargeMortgageRate).isGreaterThan(BigDecimal.valueOf(5.50));
+        assertThat(veryShortSmallMortgageRate).isGreaterThan(BigDecimal.valueOf(3.20));
+        assertThat(veryShortLargeMortgageRate).isGreaterThan(BigDecimal.valueOf(3.15));
         assertThat(standardMortgageRate).isLessThan(veryShortLargeMortgageRate);
     }
 
