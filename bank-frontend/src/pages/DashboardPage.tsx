@@ -1,9 +1,9 @@
-import { useEffect, useMemo, useState, type FormEvent } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { getCustomerAccountStatus, openCustomerAccount } from '../api/account';
 import { extractApiErrorMessage } from '../api/http';
-import { submitLoanApplication } from '../api/loan';
-import type { AccountStatusResponse, LoanApplicationResponse, LoanType } from '../types/auth';
+import { getLatestCustomerLoanApplication, submitLoanApplication } from '../api/loan';
+import type { AccountStatusResponse, CustomerLoanApplicationStatusResponse, LoanStatus, LoanType } from '../types/auth';
 import { clearSession, getSession } from '../utils/authStorage';
 import '../index.css';
 
@@ -32,9 +32,9 @@ const loanProductLimits = {
   },
   MORTGAGE: {
     label: 'Mortgage loan',
-    baseRate: 4.75,
-    minimumRate: 3.1,
-    maximumRate: 6.85,
+    baseRate: 3.05,
+    minimumRate: 2.65,
+    maximumRate: 3.45,
     minimumPrincipalAmount: 3_000,
     maximumPrincipalAmount: 500_000,
     principalStepAmount: 500,
@@ -62,6 +62,45 @@ function formatMoney(value: number | null | undefined) {
 function formatDebt(value: number | null | undefined) {
   const debtAmount = Math.max(value ?? 0, 0);
   return debtAmount === 0 ? formatMoney(0) : `-${formatMoney(debtAmount)}`;
+}
+
+function useCountUp(value: number | null | undefined, durationMs = 1500) {
+  const targetValue = value ?? 0;
+  const [displayValue, setDisplayValue] = useState(targetValue);
+  const previousValueRef = useRef(targetValue);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      setDisplayValue(targetValue);
+      return;
+    }
+
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      setDisplayValue(targetValue);
+      return;
+    }
+
+    const startValue = previousValueRef.current;
+    const difference = targetValue - startValue;
+    const startTime = window.performance.now();
+    let animationFrameId = 0;
+    previousValueRef.current = targetValue;
+
+    function animate(currentTime: number) {
+      const progress = Math.min((currentTime - startTime) / durationMs, 1);
+      const easedProgress = 1 - ((1 - progress) ** 3);
+      setDisplayValue(startValue + (difference * easedProgress));
+
+      if (progress < 1) {
+        animationFrameId = window.requestAnimationFrame(animate);
+      }
+    }
+
+    animationFrameId = window.requestAnimationFrame(animate);
+    return () => window.cancelAnimationFrame(animationFrameId);
+  }, [targetValue, durationMs]);
+
+  return displayValue;
 }
 
 function formatOptionalMoney(value: number | null) {
@@ -126,6 +165,25 @@ function formatCustomerReference(customerId: number | null | undefined) {
   }
 
   return `BK-${customerId.toString().padStart(6, '0')}`;
+}
+
+function formatLoanType(value: LoanType) {
+  return value === 'MORTGAGE' ? 'Mortgage loan' : 'Consumer loan';
+}
+
+function formatLoanStatus(value: LoanStatus) {
+  return value === 'ACTIVE' ? 'APPROVED' : value;
+}
+
+function formatDateTime(value: string | null | undefined) {
+  if (!value) {
+    return '-';
+  }
+
+  return new Intl.DateTimeFormat('en-GB', {
+    dateStyle: 'medium',
+    timeStyle: 'short',
+  }).format(new Date(value));
 }
 
 function calculateEstimatedAnnualInterestRate(loanApplicationDraft: LoanApplicationDraft) {
@@ -225,13 +283,17 @@ export function DashboardPage() {
   });
 
   const [loanApplicationMessage, setLoanApplicationMessage] = useState<string | null>(null);
-  const [loanApplicationResult, setLoanApplicationResult] = useState<LoanApplicationResponse | null>(null);
+  const [latestLoanApplication, setLatestLoanApplication] = useState<CustomerLoanApplicationStatusResponse | null>(null);
+  const [isLoadingLoanApplication, setIsLoadingLoanApplication] = useState(session?.role === 'CUSTOMER');
   const [isSubmittingLoanApplication, setIsSubmittingLoanApplication] = useState(false);
   const [isLogoAvailable, setIsLogoAvailable] = useState(true);
 
   const isAccountPanelLoading = !hasLoadedStatus || isLoadingStatus;
   const hasActiveAccount = accountStatus?.hasAccount && accountStatus.status === 'ACTIVE';
+  const hasPendingLoanApplication = latestLoanApplication?.status === 'PENDING';
   const selectedLoanProduct = loanProductLimits[loanApplicationDraft.loanType];
+  const animatedBalance = useCountUp(accountStatus?.balance);
+  const animatedOutstandingDebt = useCountUp(accountStatus?.outstandingDebtAmount);
 
   const loanApplicationValidationMessage = useMemo(
     () => getLoanApplicationValidationMessage(loanApplicationDraft),
@@ -290,15 +352,21 @@ export function DashboardPage() {
 
     async function loadAccountStatus() {
       setIsLoadingStatus(true);
+      setIsLoadingLoanApplication(true);
       setAccountError(null);
 
       try {
-        const response = await getCustomerAccountStatus();
+        const [response, latestLoanApplicationResponse] = await Promise.all([
+          getCustomerAccountStatus(),
+          getLatestCustomerLoanApplication(),
+        ]);
         setAccountStatus(response);
+        setLatestLoanApplication(latestLoanApplicationResponse);
       } catch (error) {
         setAccountError(extractApiErrorMessage(error, 'Failed to load account status.'));
       } finally {
         setIsLoadingStatus(false);
+        setIsLoadingLoanApplication(false);
         setHasLoadedStatus(true);
       }
     }
@@ -340,7 +408,6 @@ export function DashboardPage() {
       [field]: value,
     }));
     setLoanApplicationMessage(null);
-    setLoanApplicationResult(null);
   }
 
   function handleAmountChange(delta: number) {
@@ -370,9 +437,13 @@ export function DashboardPage() {
       return;
     }
 
+    if (hasPendingLoanApplication) {
+      setLoanApplicationMessage('You already have a loan application waiting for employee review.');
+      return;
+    }
+
     setIsSubmittingLoanApplication(true);
     setLoanApplicationMessage(null);
-    setLoanApplicationResult(null);
 
     try {
       const response = await submitLoanApplication({
@@ -380,8 +451,9 @@ export function DashboardPage() {
         principalAmount: Number(loanApplicationDraft.principalAmount),
         repaymentTermMonths: Number(loanApplicationDraft.repaymentTermMonths),
       });
-      setLoanApplicationResult(response);
-      setLoanApplicationMessage(`Loan application #${response.loanId} was submitted for employee review.`);
+      setLatestLoanApplication(response);
+      setIsLoanApplicationOpen(false);
+      setLoanApplicationMessage('Your loan application was submitted for employee review.');
     } catch (submitError) {
       setLoanApplicationMessage(extractApiErrorMessage(submitError, 'Loan application could not be submitted.'));
     } finally {
@@ -513,24 +585,27 @@ export function DashboardPage() {
         `}
       </style>
 
-      <header className="bank-dashboard-topbar" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+      <header className="bank-dashboard-topbar">
 
         <div style={{ display: 'flex', alignItems: 'center', gap: '3rem' }}>
-          <Link to="/" style={{ display: 'flex', alignItems: 'center', gap: '1rem', textDecoration: 'none' }}>
+          <div className="bank-dashboard-brand" aria-label="BANKAI brand">
             {isLogoAvailable ? (
-              <img
-                src="/bankai-logo.png"
-                alt="BANKΛI"
-                style={{ width: '60px', height: 'auto', background: 'transparent' }}
-                onError={() => setIsLogoAvailable(false)}
-              />
+              <span className="bank-brand-logo-frame">
+                <img
+                  className="bank-brand-logo"
+                  src="/bankai-logo.png"
+                  alt="BANKΛI"
+                  onError={() => setIsLogoAvailable(false)}
+                />
+              </span>
             ) : (
-              <span style={{ fontSize: '2rem', fontWeight: 'bold', color: '#3b82f6' }}>BΛ</span>
+              <span className="bank-brand-mark">BΛ</span>
             )}
             <div>
-              <span style={{ fontSize: '1.8rem', fontWeight: 'bold', color: 'white' }}>BANKΛI</span>
+              <p className="bank-brand-name">BANKΛI</p>
+              <p className="bank-brand-subtitle">Premium AI FinTech</p>
             </div>
-          </Link>
+          </div>
 
 
         </div>
@@ -586,13 +661,13 @@ export function DashboardPage() {
               <div className="bank-account-overview">
                 <div className="bank-account-balance-card">
                   <span>Available balance</span>
-                  <strong>{formatMoney(accountStatus.balance)}</strong>
+                  <strong>{formatMoney(animatedBalance)}</strong>
                   <small>{formatCustomerReference(session?.customerId)}</small>
                 </div>
 
                 <div className={`bank-account-debt-card ${(accountStatus.outstandingDebtAmount ?? 0) > 0 ? 'bank-account-debt-card-active' : ''}`}>
                   <span>Outstanding debt</span>
-                  <strong>{formatDebt(accountStatus.outstandingDebtAmount)}</strong>
+                  <strong>{formatDebt(animatedOutstandingDebt)}</strong>
                   <small>Active loan principal</small>
                 </div>
 
@@ -656,9 +731,46 @@ export function DashboardPage() {
                 Choose loan parameters and prepare a request for employee review.
               </p>
 
+              {loanApplicationMessage && !isLoanApplicationOpen && (
+                <p className="bank-form-message">{loanApplicationMessage}</p>
+              )}
+
+              {isLoadingLoanApplication ? (
+                <div className="bank-application-status bank-application-status-muted">
+                  <span>Application status</span>
+                  <strong>Loading...</strong>
+                </div>
+              ) : latestLoanApplication && (
+                <div className={`bank-application-status bank-application-status-${latestLoanApplication.status.toLowerCase()}`}>
+                  <div className="bank-application-status-head">
+                    <span>Loan application</span>
+                    <strong>{formatLoanStatus(latestLoanApplication.status)}</strong>
+                  </div>
+                  <div className="bank-application-status-grid">
+                    <div>
+                      <span>Product</span>
+                      <strong>{formatLoanType(latestLoanApplication.loanType)}</strong>
+                    </div>
+                    <div>
+                      <span>Amount</span>
+                      <strong>{formatMoney(latestLoanApplication.principalAmount)}</strong>
+                    </div>
+                    <div>
+                      <span>Submitted</span>
+                      <strong>{formatDateTime(latestLoanApplication.submittedAt)}</strong>
+                    </div>
+                    <div>
+                      <span>Indicative rate</span>
+                      <strong>{latestLoanApplication.annualInterestRate.toFixed(2)}%</strong>
+                    </div>
+                  </div>
+                  <p>{latestLoanApplication.message}</p>
+                </div>
+              )}
+
               <div className="bank-rate-row">
                 <span>Consumer 5.20% - 6.70%</span>
-                <span>Mortgage 3.10% - 6.85%</span>
+                <span>Mortgage 2.65% - 3.45%</span>
               </div>
 
               <div className="bank-product-limit-grid">
@@ -678,13 +790,16 @@ export function DashboardPage() {
                 type="button"
                 className="bank-primary-button bank-full-width-button"
                 onClick={() => setIsLoanApplicationOpen(true)}
-                disabled={!hasActiveAccount}
+                disabled={!hasActiveAccount || hasPendingLoanApplication}
               >
-                Request loan
+                {hasPendingLoanApplication ? 'Application pending' : 'Request loan'}
               </button>
 
               {!hasActiveAccount && !isAccountPanelLoading && (
                 <p className="bank-panel-note">Open an account before submitting a credit request.</p>
+              )}
+              {hasPendingLoanApplication && (
+                <p className="bank-panel-note">Wait for employee review before submitting another request.</p>
               )}
             </article>
 
@@ -859,23 +974,6 @@ export function DashboardPage() {
                 <p className="bank-form-message">{loanApplicationMessage || loanApplicationValidationMessage}</p>
               )}
 
-              {loanApplicationResult && (
-                <div className="bank-application-receipt" aria-live="polite">
-                  <div>
-                    <span>Application ID</span>
-                    <strong>#{loanApplicationResult.loanId}</strong>
-                  </div>
-                  <div>
-                    <span>Status</span>
-                    <strong>{loanApplicationResult.status}</strong>
-                  </div>
-                  <div>
-                    <span>Indicative rate</span>
-                    <strong>{loanApplicationResult.annualInterestRate.toFixed(2)}%</strong>
-                  </div>
-                </div>
-              )}
-
               <div className="bank-form-actions">
                 <button type="button" className="bank-ghost-button" onClick={() => setIsLoanApplicationOpen(false)}>
                   Cancel
@@ -883,7 +981,7 @@ export function DashboardPage() {
                 <button
                   type="submit"
                   className="bank-primary-button"
-                  disabled={Boolean(loanApplicationValidationMessage) || isSubmittingLoanApplication}
+                  disabled={Boolean(loanApplicationValidationMessage) || hasPendingLoanApplication || isSubmittingLoanApplication}
                 >
                   {isSubmittingLoanApplication ? 'Submitting...' : 'Submit request'}
                 </button>

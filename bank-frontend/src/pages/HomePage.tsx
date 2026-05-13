@@ -157,7 +157,7 @@ export function HomePage() {
       </main>
 
       <footer className="enterprise-footer">
-        <p>© 2026 BλNKλI Bank System. All rights reserved.</p>
+        <p>© 2026 BANKΛI Bank System. All rights reserved.</p>
         <p>Built for secure banking operations and trusted digital customer access.</p>
       </footer>
     </div>

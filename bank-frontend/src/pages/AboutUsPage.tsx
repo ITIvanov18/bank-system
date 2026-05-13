@@ -114,9 +114,9 @@ export function AboutUsPage() {
       <header className="enterprise-nav">
         <div style={{ display: 'flex', alignItems: 'center', gap: '3rem' }}>
           <Link to="/" className="enterprise-logo-wrap" style={{ textDecoration: 'none' }}>
-            <img src="/bankai-logo.png" alt="BANKλI" style={{ width: '60px' }} />
+            <img src="/bankai-logo.png" alt="BANKΛI" style={{ width: '60px' }} />
             <div>
-              <span className="enterprise-logo-text">BANKλI</span>
+              <span className="enterprise-logo-text">BANKΛI</span>
               <span className="enterprise-logo-subtitle">Premium AI FinTech</span>
             </div>
           </Link>
@@ -137,7 +137,7 @@ export function AboutUsPage() {
               <span className="gradient-text"> of thought</span>
             </h1>
             <p className="subtitle enterprise-subtitle" style={{ maxWidth: '700px', lineHeight: '1.6' }}>
-              Founded in 2026, BANKλI transformed from an ambitious AI research project into a global financial powerhouse. We are the first institution to eliminate bureaucracy through fully automated, intelligent core banking systems.
+              Founded in 2026, BANKΛI transformed from an ambitious AI research project into a global financial powerhouse. We are the first institution to eliminate bureaucracy through fully automated, intelligent core banking systems.
             </p>
 
             <div className="enterprise-metrics" aria-label="Business metrics" style={{ marginTop: '3rem' }}>
@@ -181,7 +181,7 @@ export function AboutUsPage() {
                 <div className="timeline-marker-v"></div>
                 <div className="timeline-content-v">
                   <h3>2026</h3>
-                  <p>Established. BANKλI officially launched for global banking.</p>
+                  <p>Established. BANKΛI officially launched for global banking.</p>
                 </div>
               </div>
             </div>
@@ -190,7 +190,7 @@ export function AboutUsPage() {
 
         <section className="enterprise-section enterprise-security" style={{ borderRadius: '32px', marginBottom: '0' }}>
           <div>
-            <h2>The Minds Behind BANKλI</h2>
+            <h2>The Minds Behind BANKΛI</h2>
             <p style={{ color: '#94a3b8' }}>
               A collective of security specialists and AI researchers dedicated to excellence.
             </p>
@@ -230,7 +230,7 @@ export function AboutUsPage() {
       </main>
 
       <footer className="enterprise-footer">
-        <p>© 2026 BANKλI Bank System. All rights reserved.</p>
+        <p>© 2026 BANKΛI Bank System. All rights reserved.</p>
       </footer>
     </div>
   );
