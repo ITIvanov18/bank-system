@@ -3,19 +3,24 @@ package com.nbu.bank_system.integration;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.nbu.bank_system.domain.enums.InstallmentStatus;
+import com.nbu.bank_system.domain.enums.AccountStatus;
 import com.nbu.bank_system.domain.enums.LoanStatus;
 import com.nbu.bank_system.domain.enums.LoanType;
 import com.nbu.bank_system.domain.enums.UserRole;
+import com.nbu.bank_system.domain.model.account.BankAccount;
 import com.nbu.bank_system.domain.model.customer.IndividualCustomer;
 import com.nbu.bank_system.domain.model.loan.Loan;
+import com.nbu.bank_system.repository.BankAccountRepository;
 import com.nbu.bank_system.repository.CustomerRepository;
 import com.nbu.bank_system.repository.InstallmentRepository;
 import com.nbu.bank_system.repository.LoanRepository;
+import com.nbu.bank_system.repository.LoanReviewLogRepository;
 import java.math.BigDecimal;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
@@ -51,7 +56,13 @@ class EmployeeLoanControllerIntegrationTest {
     private CustomerRepository customerRepository;
 
     @Autowired
+    private BankAccountRepository bankAccountRepository;
+
+    @Autowired
     private LoanRepository loanRepository;
+
+    @Autowired
+    private LoanReviewLogRepository loanReviewLogRepository;
 
     @Autowired
     private InstallmentRepository installmentRepository;
@@ -84,8 +95,10 @@ class EmployeeLoanControllerIntegrationTest {
 
     @BeforeEach
     void setUp() {
+        loanReviewLogRepository.deleteAll();
         installmentRepository.deleteAll();
         loanRepository.deleteAll();
+        bankAccountRepository.deleteAll();
         customerRepository.deleteAll();
 
         customer = new IndividualCustomer("Grigor", "Kamenov", "0248250090");
@@ -183,5 +196,73 @@ class EmployeeLoanControllerIntegrationTest {
                 .andExpect(jsonPath("$.message").value("Principal amount exceeds the maximum allowed amount for CONSUMER loans."));
 
         assertThat(loanRepository.findByCustomerIdOrderByCreatedAtDesc(customer.getId())).isEmpty();
+    }
+
+    @Test
+    void customerCanSubmitLoanApplicationAndEmployeeCanApproveItWithHistoryLog() throws Exception {
+        bankAccountRepository.save(new BankAccount(
+                "BG99BANK12345678901234",
+                BigDecimal.valueOf(1000),
+                AccountStatus.ACTIVE,
+                customer
+        ));
+
+        String applicationBody = """
+                {
+                  "loanType": "CONSUMER",
+                  "principalAmount": 12000.00,
+                  "repaymentTermMonths": 24
+                }
+                """;
+
+        mockMvc.perform(post("/api/customer/loans/applications")
+                        .with(user("F115436@students.nbu.bg").roles("CUSTOMER"))
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(applicationBody))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.customerId").value(customer.getId()))
+                .andExpect(jsonPath("$.status").value("PENDING"))
+                .andExpect(jsonPath("$.repaymentSchedule.length()").value(0));
+
+        Loan pendingLoan = loanRepository.findByCustomerIdOrderByCreatedAtDesc(customer.getId()).getFirst();
+        assertThat(pendingLoan.getStatus()).isEqualTo(LoanStatus.PENDING);
+        assertThat(pendingLoan.getStartDate()).isNull();
+        assertThat(installmentRepository.findByLoanIdOrderByInstallmentNumberAsc(pendingLoan.getId())).isEmpty();
+
+        String decisionBody = """
+                {
+                  "decisionNote": "Approved after employee review."
+                }
+                """;
+
+        mockMvc.perform(post("/api/employee/loans/applications/{loanId}/approve", pendingLoan.getId())
+                        .with(user("employee@bankai.bg").roles("EMPLOYEE"))
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(decisionBody))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("ACTIVE"))
+                .andExpect(jsonPath("$.reviewedAt").exists())
+                .andExpect(jsonPath("$.repaymentSchedule.length()").value(24));
+
+        Loan approvedLoan = loanRepository.findById(pendingLoan.getId()).orElseThrow();
+        assertThat(approvedLoan.getStatus()).isEqualTo(LoanStatus.ACTIVE);
+        assertThat(approvedLoan.getReviewedAt()).isNotNull();
+        assertThat(installmentRepository.findByLoanIdOrderByInstallmentNumberAsc(approvedLoan.getId())).hasSize(24);
+
+        mockMvc.perform(get("/api/employee/loans/applications/history")
+                        .with(user("employee@bankai.bg").roles("EMPLOYEE"))
+                        .with(csrf()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].loanId").value(pendingLoan.getId()))
+                .andExpect(jsonPath("$[0].customerId").value(customer.getId()))
+                .andExpect(jsonPath("$[0].customerEmail").value("F115436@students.nbu.bg"))
+                .andExpect(jsonPath("$[0].employeeEmail").value("employee@bankai.bg"))
+                .andExpect(jsonPath("$[0].decision").value("APPROVED"))
+                .andExpect(jsonPath("$[0].principalAmount").value(12000.00))
+                .andExpect(jsonPath("$[0].repaymentTermMonths").value(24))
+                .andExpect(jsonPath("$[0].decisionNote").value("Approved after employee review."))
+                .andExpect(jsonPath("$[0].decidedAt").exists());
     }
 }

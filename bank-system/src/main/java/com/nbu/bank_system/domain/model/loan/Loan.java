@@ -20,8 +20,12 @@ import jakarta.validation.constraints.Digits;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
+import lombok.Getter;
+import lombok.Setter;
+
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -31,6 +35,7 @@ import java.util.List;
    repayment term и текущия loan lifecycle status.
  */
 
+@Getter
 @Entity
 @Table(name = "loans")
 public class Loan extends BaseEntity {
@@ -51,29 +56,32 @@ public class Loan extends BaseEntity {
 
     @NotNull
     @Digits(integer = 19, fraction = 2)
-    @DecimalMin(value = "0.01", inclusive = true)
+    @DecimalMin(value = "0.01")
     @Column(name = "principal_amount", nullable = false, precision = 19, scale = 2)
     private BigDecimal principalAmount;
 
     @NotNull
     @Digits(integer = 5, fraction = 4)
-    @DecimalMin(value = "0.0001", inclusive = true)
+    @DecimalMin(value = "0.0001")
     @Column(name = "annual_interest_rate", nullable = false, precision = 9, scale = 4)
     private BigDecimal annualInterestRate;
 
     @Min(1)
-    @Max(480)
+    @Max(360)
     @Column(name = "repayment_term_months", nullable = false)
     private Integer repaymentTermMonths;
 
+    @Setter
     @NotNull
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false, length = 20)
     private LoanStatus status;
 
-    @NotNull
-    @Column(name = "start_date", nullable = false)
+    @Column(name = "start_date")
     private LocalDate startDate;
+
+    @Column(name = "reviewed_at")
+    private LocalDateTime reviewedAt;
 
     @OneToMany(mappedBy = "loan", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Installment> installments = new ArrayList<>();
@@ -99,40 +107,15 @@ public class Loan extends BaseEntity {
         this.startDate = startDate;
     }
 
-    public Customer getCustomer() {
-        return customer;
+    public void approve(LocalDate startDate, LocalDateTime reviewedAt) {
+        this.status = LoanStatus.ACTIVE;
+        this.startDate = startDate;
+        this.reviewedAt = reviewedAt;
     }
 
-    public LoanType getLoanType() {
-        return loanType;
-    }
-
-    public BigDecimal getPrincipalAmount() {
-        return principalAmount;
-    }
-
-    public BigDecimal getAnnualInterestRate() {
-        return annualInterestRate;
-    }
-
-    public Integer getRepaymentTermMonths() {
-        return repaymentTermMonths;
-    }
-
-    public LoanStatus getStatus() {
-        return status;
-    }
-
-    public LocalDate getStartDate() {
-        return startDate;
-    }
-
-    public List<Installment> getInstallments() {
-        return installments;
-    }
-
-    public void setStatus(LoanStatus status) {
-        this.status = status;
+    public void reject(LocalDateTime reviewedAt) {
+        this.status = LoanStatus.REJECTED;
+        this.reviewedAt = reviewedAt;
     }
 
     public void addInstallment(Installment installment) {

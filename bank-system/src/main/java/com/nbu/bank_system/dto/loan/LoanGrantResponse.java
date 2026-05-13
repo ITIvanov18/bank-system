@@ -4,6 +4,7 @@ import com.nbu.bank_system.domain.enums.LoanStatus;
 import com.nbu.bank_system.domain.enums.LoanType;
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 
 public record LoanGrantResponse(
@@ -15,6 +16,7 @@ public record LoanGrantResponse(
         Integer repaymentTermMonths,
         LoanStatus status,
         LocalDate startDate,
+        LocalDateTime reviewedAt,
         BigDecimal monthlyInstallmentAmount,
         List<InstallmentResponse> repaymentSchedule,
         String message
