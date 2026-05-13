@@ -1,262 +1,30 @@
-import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useEffect, useMemo, useState, type FormEvent } from 'react';
+import { useNavigate, Link } from 'react-router-dom';
 import { getCustomerAccountStatus, openCustomerAccount } from '../api/account';
 import { extractApiErrorMessage } from '../api/http';
 import { getLatestCustomerLoanApplication, submitLoanApplication } from '../api/loan';
-import type { AccountStatusResponse, CustomerLoanApplicationStatusResponse, LoanStatus, LoanType } from '../types/auth';
+import type { AccountStatusResponse, CustomerLoanApplicationStatusResponse } from '../types/auth';
 import { clearSession, getSession } from '../utils/authStorage';
+import {
+  loanProductLimits,
+  formatMoney,
+  formatDebt,
+  useCountUp,
+  formatOptionalMoney,
+  formatAmountLimits,
+  formatTermLimits,
+  getLoanApplicationValidationMessage,
+  formatCustomerReference,
+  formatLoanType,
+  formatLoanStatus,
+  formatDateTime,
+  calculateEstimatedAnnualInterestRate,
+  calculateMonthlyPayment,
+  calculateApr,
+  type LoanApplicationDraft
+} from './js/dashboardLogic';
+import './css/DashboardPage.css';
 import '../index.css';
-
-type LoanApplicationDraft = {
-  loanType: LoanType;
-  principalAmount: string;
-  repaymentTermMonths: string;
-};
-
-const loanProductLimits = {
-  CONSUMER: {
-    label: 'Consumer loan',
-    baseRate: 5.95,
-    minimumRate: 5.2,
-    maximumRate: 6.7,
-    minimumPrincipalAmount: 1_000,
-    maximumPrincipalAmount: 40_000,
-    principalStepAmount: 5,
-    minimumRepaymentTermMonths: 12,
-    maximumRepaymentTermMonths: 120,
-    monthlyServiceFee: 2.5,
-    upfrontFees: {
-      analysis: 0,
-      collateralAssessment: 0,
-    },
-  },
-  MORTGAGE: {
-    label: 'Mortgage loan',
-    baseRate: 3.05,
-    minimumRate: 2.65,
-    maximumRate: 3.45,
-    minimumPrincipalAmount: 3_000,
-    maximumPrincipalAmount: 500_000,
-    principalStepAmount: 500,
-    minimumRepaymentTermMonths: null,
-    maximumRepaymentTermMonths: 360,
-    monthlyServiceFee: 10,
-    upfrontFees: {
-      analysis: 200,
-      collateralAssessment: 100,
-    },
-  },
-} as const;
-
-const monthsInYear = 12;
-const shortMortgageTermThresholdMonths = 36;
-type LoanProductLimits = typeof loanProductLimits[keyof typeof loanProductLimits];
-
-function formatMoney(value: number | null | undefined) {
-  return `${(value ?? 0).toLocaleString('bg-BG', {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  })} EUR`;
-}
-
-function formatDebt(value: number | null | undefined) {
-  const debtAmount = Math.max(value ?? 0, 0);
-  return debtAmount === 0 ? formatMoney(0) : `-${formatMoney(debtAmount)}`;
-}
-
-function useCountUp(value: number | null | undefined, durationMs = 1500) {
-  const targetValue = value ?? 0;
-  const [displayValue, setDisplayValue] = useState(targetValue);
-  const previousValueRef = useRef(targetValue);
-
-  useEffect(() => {
-    if (typeof window === 'undefined') {
-      setDisplayValue(targetValue);
-      return;
-    }
-
-    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-      setDisplayValue(targetValue);
-      return;
-    }
-
-    const startValue = previousValueRef.current;
-    const difference = targetValue - startValue;
-    const startTime = window.performance.now();
-    let animationFrameId = 0;
-    previousValueRef.current = targetValue;
-
-    function animate(currentTime: number) {
-      const progress = Math.min((currentTime - startTime) / durationMs, 1);
-      const easedProgress = 1 - ((1 - progress) ** 3);
-      setDisplayValue(startValue + (difference * easedProgress));
-
-      if (progress < 1) {
-        animationFrameId = window.requestAnimationFrame(animate);
-      }
-    }
-
-    animationFrameId = window.requestAnimationFrame(animate);
-    return () => window.cancelAnimationFrame(animationFrameId);
-  }, [targetValue, durationMs]);
-
-  return displayValue;
-}
-
-function formatOptionalMoney(value: number | null) {
-  return value === null ? '-' : formatMoney(value);
-}
-
-function formatAmountLimits(product: LoanProductLimits) {
-  return `${formatMoney(product.minimumPrincipalAmount)} - ${formatMoney(product.maximumPrincipalAmount)}`;
-}
-
-function formatTermLimits(product: LoanProductLimits) {
-  if (product.minimumRepaymentTermMonths === null) {
-    return `No product minimum, up to ${product.maximumRepaymentTermMonths} months`;
-  }
-
-  return `${product.minimumRepaymentTermMonths} - ${product.maximumRepaymentTermMonths} months`;
-}
-
-function getLoanApplicationValidationMessage(loanApplicationDraft: LoanApplicationDraft) {
-  const product = loanProductLimits[loanApplicationDraft.loanType];
-  const principalAmount = Number(loanApplicationDraft.principalAmount);
-  const repaymentTermMonths = Number(loanApplicationDraft.repaymentTermMonths);
-
-  if (!Number.isFinite(principalAmount) || principalAmount <= 0) {
-    return 'Enter a valid loan amount.';
-  }
-
-  if (principalAmount < product.minimumPrincipalAmount) {
-    return `Minimum amount for ${product.label.toLowerCase()} is ${formatMoney(product.minimumPrincipalAmount)}.`;
-  }
-
-  if (principalAmount > product.maximumPrincipalAmount) {
-    return `Maximum amount for ${product.label.toLowerCase()} is ${formatMoney(product.maximumPrincipalAmount)}.`;
-  }
-
-  const stepRemainder = (principalAmount - product.minimumPrincipalAmount) % product.principalStepAmount;
-  if (Math.abs(stepRemainder) > 0.000001 && Math.abs(stepRemainder - product.principalStepAmount) > 0.000001) {
-    return `Amount must increase in steps of ${formatMoney(product.principalStepAmount)} for ${product.label.toLowerCase()}.`;
-  }
-
-  if (!Number.isInteger(repaymentTermMonths) || repaymentTermMonths <= 0) {
-    return 'Enter a valid repayment term in months.';
-  }
-
-  if (
-    product.minimumRepaymentTermMonths !== null
-    && repaymentTermMonths < product.minimumRepaymentTermMonths
-  ) {
-    return `Minimum term for ${product.label.toLowerCase()} is ${product.minimumRepaymentTermMonths} months.`;
-  }
-
-  if (repaymentTermMonths > product.maximumRepaymentTermMonths) {
-    return `Maximum term for ${product.label.toLowerCase()} is ${product.maximumRepaymentTermMonths} months.`;
-  }
-
-  return null;
-}
-
-function formatCustomerReference(customerId: number | null | undefined) {
-  if (!customerId) {
-    return 'Not assigned';
-  }
-
-  return `BK-${customerId.toString().padStart(6, '0')}`;
-}
-
-function formatLoanType(value: LoanType) {
-  return value === 'MORTGAGE' ? 'Mortgage loan' : 'Consumer loan';
-}
-
-function formatLoanStatus(value: LoanStatus) {
-  return value === 'ACTIVE' ? 'APPROVED' : value;
-}
-
-function formatDateTime(value: string | null | undefined) {
-  if (!value) {
-    return '-';
-  }
-
-  return new Intl.DateTimeFormat('en-GB', {
-    dateStyle: 'medium',
-    timeStyle: 'short',
-  }).format(new Date(value));
-}
-
-function calculateEstimatedAnnualInterestRate(loanApplicationDraft: LoanApplicationDraft) {
-  const product = loanProductLimits[loanApplicationDraft.loanType];
-  const principalAmount = Number(loanApplicationDraft.principalAmount);
-  const repaymentTermMonths = Number(loanApplicationDraft.repaymentTermMonths);
-
-  if (!Number.isFinite(principalAmount) || !Number.isFinite(repaymentTermMonths)) {
-    return product.baseRate;
-  }
-
-  const amountRange = product.maximumPrincipalAmount - product.minimumPrincipalAmount;
-  const amountUtilization = Math.min(Math.max((principalAmount - product.minimumPrincipalAmount) / amountRange, 0), 1);
-  const minimumTerm = product.minimumRepaymentTermMonths ?? 1;
-  const termRange = product.maximumRepaymentTermMonths - minimumTerm;
-  const termUtilization = Math.min(Math.max((repaymentTermMonths - minimumTerm) / termRange, 0), 1);
-
-  if (loanApplicationDraft.loanType === 'MORTGAGE') {
-    const shortTermRisk = repaymentTermMonths >= shortMortgageTermThresholdMonths
-      ? 0
-      : (shortMortgageTermThresholdMonths - repaymentTermMonths) / (shortMortgageTermThresholdMonths - 1);
-    const termRisk = Math.max(termUtilization, shortTermRisk);
-    const mortgageRiskScore = Math.min(termRisk * 0.65 + (1 - amountUtilization) * 0.35, 1);
-    return product.minimumRate + (product.maximumRate - product.minimumRate) * mortgageRiskScore;
-  }
-
-  const consumerRiskScore = Math.min((1 - amountUtilization) * 0.65 + (1 - termUtilization) * 0.35, 1);
-  return product.minimumRate + (product.maximumRate - product.minimumRate) * consumerRiskScore;
-}
-
-function calculateMonthlyPayment(principalAmount: number, annualInterestRate: number, repaymentTermMonths: number) {
-  const monthlyInterestRate = annualInterestRate / 100 / monthsInYear;
-
-  if (monthlyInterestRate === 0) {
-    return principalAmount / repaymentTermMonths;
-  }
-
-  const compoundFactor = (1 + monthlyInterestRate) ** repaymentTermMonths;
-  return principalAmount * monthlyInterestRate * compoundFactor / (compoundFactor - 1);
-}
-
-function calculateApr(
-  principalAmount: number,
-  monthlyPaymentWithFee: number,
-  repaymentTermMonths: number,
-  upfrontFees: number
-) {
-  const netReceivedAmount = principalAmount - upfrontFees;
-
-  if (netReceivedAmount <= 0) {
-    return 0;
-  }
-
-  let low = 0;
-  let high = 1;
-
-  for (let iteration = 0; iteration < 80; iteration += 1) {
-    const middle = (low + high) / 2;
-    let presentValue = 0;
-
-    for (let month = 1; month <= repaymentTermMonths; month += 1) {
-      presentValue += monthlyPaymentWithFee / ((1 + middle) ** month);
-    }
-
-    if (presentValue > netReceivedAmount) {
-      low = middle;
-    } else {
-      high = middle;
-    }
-  }
-
-  return (((1 + (low + high) / 2) ** monthsInYear) - 1) * 100;
-}
 
 export function DashboardPage() {
   const navigate = useNavigate();
@@ -463,128 +231,6 @@ export function DashboardPage() {
 
   return (
     <div className="bank-dashboard-shell">
-      <style>
-        {`
-          .custom-nav-pill {
-            padding: 0.5rem 1.2rem;
-            border-radius: 20px;
-            text-decoration: none;
-            color: #f1f5f9;
-            font-weight: 500;
-            transition: all 0.3s ease;
-            display: inline-block;
-          }
-          .custom-nav-pill:hover {
-            transform: translateY(-2px);
-            color: white;
-          }
-          .custom-nav-pill-blue-light {
-            background-color: rgba(59, 130, 246, 0.1);
-            color: #60a5fa;
-          }
-          .custom-nav-pill-blue-light:hover {
-            background-color: rgba(59, 130, 246, 0.2);
-            color: #93c5fd;
-          }
-          .custom-dropdown-container {
-            position: relative;
-            width: 100%;
-          }
-          .custom-dropdown-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 8px;
-            padding: 12px 16px;
-            color: white;
-            cursor: pointer;
-            font-size: 1rem;
-            transition: border-color 0.2s;
-          }
-          .custom-dropdown-header:hover {
-            border-color: rgba(255, 255, 255, 0.3);
-          }
-          .custom-dropdown-list {
-            position: absolute;
-            top: calc(100% + 4px);
-            left: 0;
-            width: 100%;
-            background: #1e293b;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 8px;
-            z-index: 50;
-            overflow: hidden;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
-          }
-          .custom-dropdown-item {
-            padding: 12px 16px;
-            color: white;
-            cursor: pointer;
-            transition: background 0.2s;
-          }
-          .custom-dropdown-item:hover {
-            background: rgba(255, 255, 255, 0.1);
-          }
-          .custom-number-input-wrapper {
-            display: flex;
-            align-items: center;
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 8px;
-            transition: border-color 0.2s;
-            overflow: hidden;
-          }
-          .custom-number-input-wrapper:focus-within {
-            border-color: #3b82f6;
-          }
-          .custom-number-input-wrapper input {
-            flex: 1;
-            background: transparent;
-            border: none;
-            color: white;
-            padding: 12px 16px;
-            font-size: 1rem;
-            outline: none;
-            -moz-appearance: textfield;
-          }
-          .custom-number-input-wrapper input::-webkit-inner-spin-button,
-          .custom-number-input-wrapper input::-webkit-outer-spin-button {
-            -webkit-appearance: none;
-            margin: 0;
-          }
-          .custom-suffix {
-            color: #94a3b8;
-            padding-right: 12px;
-            font-size: 0.9rem;
-          }
-          .custom-spinners {
-            display: flex;
-            flex-direction: column;
-            border-left: 1px solid rgba(255, 255, 255, 0.1);
-          }
-          .custom-spinner-btn {
-            background: transparent;
-            border: none;
-            color: #94a3b8;
-            padding: 4px 12px;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: background 0.2s, color 0.2s;
-          }
-          .custom-spinner-btn:hover {
-            background: rgba(255, 255, 255, 0.1);
-            color: white;
-          }
-          .custom-spinner-btn:first-child {
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-          }
-        `}
-      </style>
-
       <header className="bank-dashboard-topbar">
 
         <div style={{ display: 'flex', alignItems: 'center', gap: '3rem' }}>
@@ -606,7 +252,6 @@ export function DashboardPage() {
               <p className="bank-brand-subtitle">Premium AI FinTech</p>
             </div>
           </div>
-
 
         </div>
 

@@ -1,110 +1,11 @@
 import { Link } from 'react-router-dom';
+import { teamMembers } from './js/aboutUsLogic';
 import '../index.css';
-
-const teamMembers = [
-  {
-    name: 'Bank AI',
-    role: 'CEO & Founder',
-    image: 'https://i.pravatar.cc/150?u=elena'
-  },
-  {
-    name: 'Plamen Kostov',
-    role: 'Full-Stack Developer',
-    image: 'https://avatars.githubusercontent.com/u/56884945?v=4'
-  },
-  {
-    name: 'Ivan Ivanov',
-    role: 'Chief Security Officer',
-    image: 'https://avatars.githubusercontent.com/u/59703243?v=4'
-  },
-  {
-    name: 'Ilian Yanev',
-    role: 'Head of UI Design',
-    image: 'https://scontent.fsof11-1.fna.fbcdn.net/v/t39.30808-1/370427029_1902288020157684_5149162200906890611_n.jpg?stp=dst-jpg_s200x200_tt6&_nc_cat=107&ccb=1-7&_nc_sid=e99d92&_nc_ohc=NCYj9qZwOEMQ7kNvwFxy7Th&_nc_oc=AdpGsiYn0mj62A-Gjm9by4rVEcIbvL-S6iII2XsNnxcRq77eovEUPsiAJKDrUjABINc&_nc_zt=24&_nc_ht=scontent.fsof11-1.fna&_nc_gid=DvOL5tgG5GOMI8e76mzAqw&_nc_ss=7b2a8&oh=00_Af4KsHYuOMUXYpydjX-im4Dr9eWyFJ0Hp_VifAiuqNZkdA&oe=6A0A6561'
-  }
-];
+import './css/AboutUsPage.css';
 
 export function AboutUsPage() {
   return (
     <div className="enterprise-home">
-      <style>
-        {`
-          .custom-nav-pill {
-            padding: 0.5rem 1.2rem;
-            border-radius: 20px;
-            text-decoration: none;
-            color: #333;
-            font-weight: 500;
-            transition: all 0.3s ease;
-            display: inline-block;
-          }
-          .custom-nav-pill:hover { transform: translateY(-2px); }
-          .custom-nav-pill-blue-light { background-color: rgba(0, 123, 255, 0.1); color: #007bff; }
-
-          .team-avatar {
-            width: 65px;
-            height: 65px;
-            border-radius: 50%;
-            border: 2px solid #007bff;
-            padding: 2px;
-            background: white;
-            object-fit: cover;
-          }
-
-          .team-grid-2x2 {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 2.5rem;
-          }
-
-          .timeline-vertical {
-            position: relative;
-            padding-left: 2rem;
-            margin-top: 1.5rem;
-          }
-          .timeline-vertical::before {
-            content: "";
-            position: absolute;
-            top: 8px;
-            bottom: 8px;
-            left: 7px;
-            width: 2px;
-            background: #e2e8f0;
-            z-index: 0;
-          }
-          .timeline-node-v {
-            position: relative;
-            z-index: 1;
-            margin-bottom: 2rem;
-          }
-          .timeline-node-v:last-child { margin-bottom: 0; }
-          .timeline-marker-v {
-            position: absolute;
-            left: -2rem;
-            width: 16px;
-            height: 16px;
-            background: white;
-            border: 3px solid #007bff;
-            border-radius: 50%;
-            top: 4px;
-            box-shadow: 0 0 0 4px rgba(0, 123, 255, 0.1);
-          }
-          .timeline-content-v h3 {
-            font-size: 1.25rem;
-            font-weight: 800;
-            color: white;
-            margin-bottom: 0.25rem;
-            line-height: 1;
-          }
-          .timeline-content-v p {
-            font-size: 0.95rem;
-            color: #64748b;
-            line-height: 1.4;
-            margin: 0;
-          }
-        `}
-      </style>
-
       <div className="background-shapes">
         <div className="shape shape-1"></div>
         <div className="shape shape-2"></div>
@@ -225,7 +126,6 @@ export function AboutUsPage() {
             </article>
           </div>
         </section>
-
 
       </main>
 

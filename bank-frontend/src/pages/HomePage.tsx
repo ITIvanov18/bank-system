@@ -1,38 +1,10 @@
 import { Link } from 'react-router-dom';
 import '../index.css';
+import './css/HomePage.css';
 
 export function HomePage() {
   return (
     <div className="enterprise-home">
-      {/* Добавяме вътрешен CSS за стилните бутони в навигацията */}
-      <style>
-        {`
-          .custom-nav-pill {
-            padding: 0.5rem 1.2rem;
-            border-radius: 20px;
-            text-decoration: none;
-            color: #333;
-            font-weight: 500;
-            transition: all 0.3s ease;
-            display: inline-block;
-          }
-          .custom-nav-pill:hover {
-            transform: translateY(-2px);
-          }
-
-
-
-          /* Стил за бутон СВЕТЛО СИН (About Us) */
-          .custom-nav-pill-blue-light {
-            background-color: rgba(0, 123, 255, 0.1); /* Много светъл син фон */
-            color: #007bff; /* Светло син текст */
-          }
-          .custom-nav-pill-blue-light:hover {
-            background-color: rgba(0, 123, 255, 0.2); /* Леко по-тъмен фон на ховър */
-          }
-        `}
-      </style>
-
       <div className="background-shapes">
         <div className="shape shape-1"></div>
         <div className="shape shape-2"></div>
@@ -40,42 +12,35 @@ export function HomePage() {
       </div>
 
       <header className="enterprise-nav">
-              <div style={{ display: 'flex', alignItems: 'center', gap: '3rem' }}>
-                <Link to="/" className="enterprise-logo-wrap" style={{ textDecoration: 'none' }}>
-                  <img src="/bankai-logo.png" alt="BANKλI" style={{ width: '60px' }} />
-                  <div>
-                    <span className="enterprise-logo-text">BANKΛI</span>
-                    <span className="enterprise-logo-subtitle">Premium AI FinTech</span>
-                  </div>
-                </Link>
-                <nav style={{ display: 'flex', gap: '1rem' }}>
-                  <a href="#security" className="custom-nav-pill custom-nav-pill-blue-light">Security</a>
-
-                              <Link to="/about" className="custom-nav-pill custom-nav-pill-blue-light">About Us</Link>
-                   </nav>
-              </div>
-              <Link to="/login" className="enterprise-btn enterprise-btn-secondary">Sign in</Link>
-            </header>
-
-
+        <div style={{ display: 'flex', alignItems: 'center', gap: '3rem' }}>
+          <Link to="/" className="enterprise-logo-wrap" style={{ textDecoration: 'none' }}>
+            <img src="/bankai-logo.png" alt="BANKλI" style={{ width: '60px' }} />
+            <div>
+              <span className="enterprise-logo-text">BANKΛI</span>
+              <span className="enterprise-logo-subtitle">Premium AI FinTech</span>
+            </div>
+          </Link>
+          <nav style={{ display: 'flex', gap: '1rem' }}>
+            <a href="#security" className="custom-nav-pill custom-nav-pill-blue-light">Security</a>
+            <Link to="/about" className="custom-nav-pill custom-nav-pill-blue-light">About Us</Link>
+          </nav>
+        </div>
+        <Link to="/login" className="enterprise-btn enterprise-btn-secondary">Sign in</Link>
+      </header>
 
       <main className="enterprise-main">
         <section className="enterprise-hero enterprise-section">
-
-
-         <div className="enterprise-hero-content">
-         <div className="brand-badge">Trusted digital banking</div>
+          <div className="enterprise-hero-content">
+            <div className="brand-badge">Trusted digital banking</div>
 
             <h1 className="main-title enterprise-title">
               Enterprise-grade banking
               <span className="gradient-text"> for modern customers</span>
             </h1>
 
-            {/* СИМЕТРИЧЕН ТЕКСТ: Центриран и с ограничен max-width, за да изглежда като красив параграф */}
             <p className="subtitle enterprise-subtitle" style={{maxWidth: '700px', margin: '0 auto', lineHeight: '1.6' }}>
               Secure onboarding, reliable account access, and production-ready controls for customer and employee workflows.
             </p>
-
 
             <div className="enterprise-hero-actions" style={{ marginTop: '2rem' }}>
               <Link to="/login" className="enterprise-btn enterprise-btn-primary">
