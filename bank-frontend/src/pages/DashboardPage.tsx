@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState, type FormEvent } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { getCustomerAccountStatus, openCustomerAccount } from '../api/account';
 import { extractApiErrorMessage } from '../api/http';
 import type { AccountStatusResponse } from '../types/auth';
@@ -362,6 +362,27 @@ export function DashboardPage() {
     <div className="bank-dashboard-shell">
       <style>
         {`
+          .custom-nav-pill {
+            padding: 0.5rem 1.2rem;
+            border-radius: 20px;
+            text-decoration: none;
+            color: #f1f5f9;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            display: inline-block;
+          }
+          .custom-nav-pill:hover {
+            transform: translateY(-2px);
+            color: white;
+          }
+          .custom-nav-pill-blue-light {
+            background-color: rgba(59, 130, 246, 0.1);
+            color: #60a5fa;
+          }
+          .custom-nav-pill-blue-light:hover {
+            background-color: rgba(59, 130, 246, 0.2);
+            color: #93c5fd;
+          }
           .custom-dropdown-container {
             position: relative;
             width: 100%;
@@ -461,35 +482,47 @@ export function DashboardPage() {
         `}
       </style>
 
-      <header className="bank-dashboard-topbar">
-        <div className="bank-dashboard-brand">
-          <span className="bank-brand-logo-frame">
+      <header className="bank-dashboard-topbar" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: '3rem' }}>
+          <Link to="/" style={{ display: 'flex', alignItems: 'center', gap: '1rem', textDecoration: 'none' }}>
             {isLogoAvailable ? (
               <img
-                className="bank-brand-logo"
                 src="/bankai-logo.png"
-                alt="BankAI"
+                alt="BANKλI"
+                style={{ width: '60px', height: 'auto', background: 'transparent' }}
                 onError={() => setIsLogoAvailable(false)}
               />
             ) : (
-              <span className="bank-brand-mark">B</span>
+              <span style={{ fontSize: '2rem', fontWeight: 'bold', color: '#3b82f6' }}>Bλ</span>
             )}
-          </span>
-          <div>
-            <p className="bank-brand-name">BankAI Online Banking</p>
-            <p className="bank-brand-subtitle">Private digital banking workspace</p>
-          </div>
+            <div>
+              <span style={{ fontSize: '1.8rem', fontWeight: 'bold', color: 'white' }}>BANKλI</span>
+            </div>
+          </Link>
+
+
         </div>
 
-        <div className="bank-dashboard-user">
-          <div className="bank-user-copy">
-            <span>{customerDisplayName}</span>
-            <strong>{roleLabel} CLIENT</strong>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
+          <div style={{ textAlign: 'right' }}>
+            <span style={{ display: 'block', color: 'white', fontSize: '0.95rem', fontWeight: '500' }}>
+              {customerDisplayName}
+            </span>
+            <strong style={{ display: 'block', color: '#3b82f6', fontSize: '0.75rem', letterSpacing: '1px', textTransform: 'uppercase' }}>
+              {roleLabel} CLIENT
+            </strong>
           </div>
-          <button type="button" className="bank-ghost-button" onClick={handleLogout}>
+          <button
+            type="button"
+            className="bank-ghost-button"
+            onClick={handleLogout}
+            style={{ padding: '0.6rem 1.5rem', fontSize: '0.95rem' }}
+          >
             Logout
           </button>
         </div>
+
       </header>
 
       <main className="bank-dashboard-main">
