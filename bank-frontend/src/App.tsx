@@ -7,6 +7,7 @@ import { HomePage } from './pages/HomePage';
 import { LoginPage } from './pages/LoginPage';
 import { AdminOnboardingPage } from './pages/AdminOnboardingPage';
 import { PasswordResetPage } from './pages/PasswordResetPage';
+import { AboutUsPage } from './pages/AboutUsPage';
 
 function App() {
     return (
@@ -44,6 +45,7 @@ function App() {
                         </ProtectedRoute>
                     }
                 />
+                <Route path="/about" element={<AboutUsPage />} />
                 <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
         </BrowserRouter>

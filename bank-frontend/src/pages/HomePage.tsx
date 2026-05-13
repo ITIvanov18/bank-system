@@ -39,40 +39,25 @@ export function HomePage() {
         <div className="shape shape-3"></div>
       </div>
 
-      <header className="enterprise-nav" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+      <header className="enterprise-nav">
+              <div style={{ display: 'flex', alignItems: 'center', gap: '3rem' }}>
+                <Link to="/" className="enterprise-logo-wrap" style={{ textDecoration: 'none' }}>
+                  <img src="/bankai-logo.png" alt="BANKλI" style={{ width: '60px' }} />
+                  <div>
+                    <span className="enterprise-logo-text">BANKλI</span>
+                    <span className="enterprise-logo-subtitle">Premium AI FinTech</span>
+                  </div>
+                </Link>
+                <nav style={{ display: 'flex', gap: '1rem' }}>
+                  <a href="#security" className="custom-nav-pill custom-nav-pill-blue-light">Security</a>
 
-        {/* ЛЯВА ЧАСТ: Лого + Навигация (групирани заедно) */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '3rem' }}>
+                              <Link to="/about" className="custom-nav-pill custom-nav-pill-blue-light">About Us</Link>
+                   </nav>
+              </div>
+              <Link to="/login" className="enterprise-btn enterprise-btn-secondary">Sign in</Link>
+            </header>
 
-          {/* ЛОГО И ТЕКСТ */}
-          <div className="enterprise-logo-wrap" style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-            {/* По-малко лого (w: 60px), без тъмен фон */}
-            <img
-              src="/bankai-logo.png"
-              alt="BANKλI"
-              style={{ width: '60px', height: 'auto', background: 'transparent' }}
-            />
-            <div>
 
-              <span className="enterprise-logo-text" style={{ fontSize: '1.8rem', fontWeight: 'bold' }}>BANKλI</span>
-              <span className="enterprise-logo-subtitle" style={{ display: 'block' }}>Premium AI FinTech</span>
-            </div>
-          </div>
-
-          {/* НАВИГАЦИОННИ БУТОНИ */}
-          <nav aria-label="Primary" style={{ display: 'flex', gap: '1rem' }}>
-
-            <a href="#security" className="custom-nav-pill custom-nav-pill-blue-light">Security</a>
-
-            <Link to="/about" className="custom-nav-pill custom-nav-pill-blue-light">About Us</Link>
-          </nav>
-        </div>
-
-        {/* ДЯСНА ЧАСТ: Sign in */}
-        <Link to="/login" className="enterprise-btn enterprise-btn-secondary">
-          Sign in
-        </Link>
-      </header>
 
       <main className="enterprise-main">
         <section className="enterprise-hero enterprise-section">
