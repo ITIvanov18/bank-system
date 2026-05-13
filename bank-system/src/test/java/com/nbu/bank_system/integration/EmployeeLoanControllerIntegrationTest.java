@@ -231,9 +231,12 @@ class EmployeeLoanControllerIntegrationTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(applicationBody))
                 .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.customerId").value(customer.getId()))
+                .andExpect(jsonPath("$.loanType").value("CONSUMER"))
                 .andExpect(jsonPath("$.status").value("PENDING"))
-                .andExpect(jsonPath("$.repaymentSchedule.length()").value(0));
+                .andExpect(jsonPath("$.principalAmount").value(12000.00))
+                .andExpect(jsonPath("$.message").value("Your loan application is waiting for employee review."))
+                .andExpect(jsonPath("$.loanId").doesNotExist())
+                .andExpect(jsonPath("$.customerId").doesNotExist());
 
         Loan pendingLoan = loanRepository.findByCustomerIdOrderByCreatedAtDesc(customer.getId()).getFirst();
         assertThat(pendingLoan.getStatus()).isEqualTo(LoanStatus.PENDING);

@@ -3,6 +3,7 @@ package com.nbu.bank_system.service.loan;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -100,6 +101,28 @@ class LoanGrantingServiceTest {
         assertThat(savedLoan.getInstallments()).isEmpty();
         assertThat(response.status()).isEqualTo(LoanStatus.PENDING);
         assertThat(response.repaymentSchedule()).isEmpty();
+    }
+
+    @Test
+    void submitLoanApplicationRejectsDuplicatePendingApplication() {
+        Customer customer = mock(Customer.class);
+        when(customer.getId()).thenReturn(7L);
+        when(customerRepository.findByEmailIgnoreCase("client@bank.bg")).thenReturn(Optional.of(customer));
+        when(bankAccountRepository.existsByOwnerIdAndStatus(7L, AccountStatus.ACTIVE)).thenReturn(true);
+        when(loanRepository.existsByCustomerIdAndStatus(7L, LoanStatus.PENDING)).thenReturn(true);
+
+        org.assertj.core.api.Assertions.assertThatThrownBy(() -> loanGrantingService.submitLoanApplication(
+                "client@bank.bg",
+                new SubmitLoanApplicationRequest(
+                        LoanType.CONSUMER,
+                        BigDecimal.valueOf(12_000),
+                        24
+                )
+        ))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("already have a loan application");
+
+        verify(loanRepository, never()).save(any(Loan.class));
     }
 
     @Test

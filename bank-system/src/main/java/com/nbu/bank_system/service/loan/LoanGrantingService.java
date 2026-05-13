@@ -10,6 +10,7 @@ import com.nbu.bank_system.domain.model.account.BankAccount;
 import com.nbu.bank_system.domain.enums.AccountStatus;
 import com.nbu.bank_system.domain.enums.LoanStatus;
 import com.nbu.bank_system.domain.enums.LoanReviewDecision;
+import com.nbu.bank_system.dto.loan.CustomerLoanApplicationStatusResponse;
 import com.nbu.bank_system.dto.loan.GrantLoanRequest;
 import com.nbu.bank_system.dto.loan.InstallmentResponse;
 import com.nbu.bank_system.dto.loan.LoanGrantResponse;
@@ -24,6 +25,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Optional;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -67,6 +69,9 @@ public class LoanGrantingService {
         if (!bankAccountRepository.existsByOwnerIdAndStatus(customer.getId(), AccountStatus.ACTIVE)) {
             throw new IllegalArgumentException("Customer must have an active bank account before applying for a loan.");
         }
+        if (loanRepository.existsByCustomerIdAndStatus(customer.getId(), LoanStatus.PENDING)) {
+            throw new IllegalArgumentException("You already have a loan application waiting for employee review.");
+        }
 
         loanProductPolicy.validateLoanRequest(
                 request.loanType(),
@@ -92,6 +97,15 @@ public class LoanGrantingService {
 
         Loan savedLoan = loanRepository.save(loan);
         return toLoanGrantResponse(savedLoan, "Loan application submitted for employee review.");
+    }
+
+    @Transactional(readOnly = true)
+    public Optional<CustomerLoanApplicationStatusResponse> getLatestCustomerLoanApplication(String customerEmail) {
+        Customer customer = customerRepository.findByEmailIgnoreCase(customerEmail)
+                .orElseThrow(() -> new IllegalArgumentException("Customer was not found."));
+
+        return loanRepository.findFirstByCustomerIdOrderByCreatedAtDesc(customer.getId())
+                .map(this::toCustomerLoanApplicationStatusResponse);
     }
 
     @Transactional
@@ -231,6 +245,38 @@ public class LoanGrantingService {
                 repaymentSchedule,
                 message
         );
+    }
+
+    public CustomerLoanApplicationStatusResponse toCustomerLoanApplicationStatusResponse(Loan loan) {
+        List<InstallmentResponse> repaymentSchedule = loan.getInstallments().stream()
+                .sorted(Comparator.comparing(Installment::getInstallmentNumber))
+                .map(this::toInstallmentResponse)
+                .toList();
+        BigDecimal monthlyInstallmentAmount = repaymentSchedule.isEmpty()
+                ? BigDecimal.ZERO
+                : repaymentSchedule.getFirst().monthlyInstallmentAmount();
+
+        return new CustomerLoanApplicationStatusResponse(
+                loan.getLoanType(),
+                loan.getPrincipalAmount(),
+                loan.getAnnualInterestRate(),
+                loan.getRepaymentTermMonths(),
+                loan.getStatus(),
+                loan.getStartDate(),
+                loan.getCreatedAt(),
+                loan.getReviewedAt(),
+                monthlyInstallmentAmount,
+                resolveCustomerLoanStatusMessage(loan)
+        );
+    }
+
+    private String resolveCustomerLoanStatusMessage(Loan loan) {
+        return switch (loan.getStatus()) {
+            case PENDING -> "Your loan application is waiting for employee review.";
+            case REJECTED -> "Your loan application was not approved.";
+            case ACTIVE -> "Your loan application was approved and funds were transferred.";
+            case CLOSED -> "This loan has been closed.";
+        };
     }
 
     private LoanReviewLogResponse toLoanReviewLogResponse(LoanReviewLog log) {

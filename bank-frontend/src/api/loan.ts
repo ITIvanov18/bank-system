@@ -1,5 +1,6 @@
 import { httpClient } from './http';
 import type {
+  CustomerLoanApplicationStatusResponse,
   LoanApplicationRequest,
   LoanApplicationResponse,
   LoanReviewHistoryItem,
@@ -8,9 +9,17 @@ import type {
 
 export async function submitLoanApplication(
   request: LoanApplicationRequest,
-): Promise<LoanApplicationResponse> {
-  const response = await httpClient.post<LoanApplicationResponse>('/api/customer/loans/applications', request);
+): Promise<CustomerLoanApplicationStatusResponse> {
+  const response = await httpClient.post<CustomerLoanApplicationStatusResponse>('/api/customer/loans/applications', request);
   return response.data;
+}
+
+export async function getLatestCustomerLoanApplication(): Promise<CustomerLoanApplicationStatusResponse | null> {
+  const response = await httpClient.get<CustomerLoanApplicationStatusResponse | ''>(
+    '/api/customer/loans/applications/latest',
+    { validateStatus: (status) => status === 200 || status === 204 },
+  );
+  return response.status === 204 ? null : response.data as CustomerLoanApplicationStatusResponse;
 }
 
 export async function getPendingLoanApplications(): Promise<LoanApplicationResponse[]> {

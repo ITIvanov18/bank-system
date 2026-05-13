@@ -127,6 +127,19 @@ export interface LoanApplicationResponse {
   message: string;
 }
 
+export interface CustomerLoanApplicationStatusResponse {
+  loanType: LoanType;
+  principalAmount: number;
+  annualInterestRate: number;
+  repaymentTermMonths: number;
+  status: LoanStatus;
+  startDate: string | null;
+  submittedAt: string;
+  reviewedAt: string | null;
+  monthlyInstallmentAmount: number;
+  message: string;
+}
+
 export interface LoanReviewRequest {
   decisionNote?: string;
 }
