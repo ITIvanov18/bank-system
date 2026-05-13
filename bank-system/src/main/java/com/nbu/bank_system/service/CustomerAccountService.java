@@ -7,7 +7,9 @@ import com.nbu.bank_system.dto.account.AccountOpeningResponse;
 import com.nbu.bank_system.dto.account.AccountStatusResponse;
 import com.nbu.bank_system.repository.BankAccountRepository;
 import com.nbu.bank_system.repository.CustomerRepository;
+import com.nbu.bank_system.repository.LoanRepository;
 import java.math.BigDecimal;
+import java.util.Optional;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -23,25 +25,34 @@ public class CustomerAccountService {
 
     private final BankAccountRepository bankAccountRepository;
     private final CustomerRepository customerRepository;
+    private final LoanRepository loanRepository;
 
-    public CustomerAccountService(BankAccountRepository bankAccountRepository, CustomerRepository customerRepository) {
+    public CustomerAccountService(
+            BankAccountRepository bankAccountRepository,
+            CustomerRepository customerRepository,
+            LoanRepository loanRepository
+    ) {
         this.bankAccountRepository = bankAccountRepository;
         this.customerRepository = customerRepository;
+        this.loanRepository = loanRepository;
     }
 
     @Transactional(readOnly = true)
     public AccountStatusResponse getAccountStatus(String authenticatedEmail) {
         Customer customer = getAuthenticatedCustomer(authenticatedEmail);
+        BigDecimal outstandingDebtAmount = loanRepository.calculateOutstandingPrincipalDebt(customer.getId())
+                .max(BigDecimal.ZERO);
 
-        return bankAccountRepository.findFirstByOwnerIdOrderByIdAsc(customer.getId())
+        return findCustomerDisplayAccount(customer.getId())
                 .map(account -> new AccountStatusResponse(
                         true,
                         account.getId(),
                         account.getIban(),
                         account.getBalance(),
+                        outstandingDebtAmount,
                         account.getStatus()
                 ))
-                .orElseGet(() -> new AccountStatusResponse(false, null, null, null, null));
+                .orElseGet(() -> new AccountStatusResponse(false, null, null, null, outstandingDebtAmount, null));
     }
 
     @Transactional
@@ -79,6 +90,11 @@ public class CustomerAccountService {
         String normalizedEmail = authenticatedEmail.trim().toLowerCase();
         return customerRepository.findByEmailIgnoreCase(normalizedEmail)
                 .orElseThrow(() -> new BadCredentialsException("Authenticated user not found"));
+    }
+
+    private Optional<BankAccount> findCustomerDisplayAccount(Long customerId) {
+        return bankAccountRepository.findFirstByOwnerIdAndStatusOrderByIdAsc(customerId, AccountStatus.ACTIVE)
+                .or(() -> bankAccountRepository.findFirstByOwnerIdOrderByIdAsc(customerId));
     }
 
     private String generateUniqueIban() {

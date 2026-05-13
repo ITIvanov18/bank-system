@@ -10,6 +10,7 @@ import com.nbu.bank_system.domain.enums.AccountStatus;
 import com.nbu.bank_system.domain.enums.LoanReviewDecision;
 import com.nbu.bank_system.domain.enums.LoanStatus;
 import com.nbu.bank_system.domain.enums.LoanType;
+import com.nbu.bank_system.domain.model.account.BankAccount;
 import com.nbu.bank_system.domain.model.customer.Customer;
 import com.nbu.bank_system.domain.model.loan.Loan;
 import com.nbu.bank_system.domain.model.loan.LoanReviewLog;
@@ -45,7 +46,10 @@ class LoanGrantingServiceTest {
     void grantLoanCreatesActiveLoanWithGeneratedRepaymentSchedule() {
         Customer customer = mock(Customer.class);
         when(customer.getId()).thenReturn(7L);
+        BankAccount activeAccount = new BankAccount("BG12BNKI12345678901234", BigDecimal.valueOf(100), AccountStatus.ACTIVE, customer);
         when(customerRepository.findById(7L)).thenReturn(Optional.of(customer));
+        when(bankAccountRepository.findFirstByOwnerIdAndStatusOrderByIdAsc(7L, AccountStatus.ACTIVE))
+                .thenReturn(Optional.of(activeAccount));
         when(loanRepository.save(any(Loan.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         LoanGrantResponse response = loanGrantingService.grantLoan(new GrantLoanRequest(
@@ -62,6 +66,7 @@ class LoanGrantingServiceTest {
         assertThat(savedLoan.getCustomer()).isSameAs(customer);
         assertThat(savedLoan.getStatus()).isEqualTo(LoanStatus.ACTIVE);
         assertThat(savedLoan.getInstallments()).hasSize(24);
+        assertThat(activeAccount.getBalance()).isEqualByComparingTo("12100");
         assertThat(response.customerId()).isEqualTo(7L);
         assertThat(response.loanType()).isEqualTo(LoanType.CONSUMER);
         assertThat(response.annualInterestRate()).isBetween(BigDecimal.valueOf(5.20), BigDecimal.valueOf(6.70));
@@ -102,6 +107,7 @@ class LoanGrantingServiceTest {
         Customer customer = mock(Customer.class);
         when(customer.getId()).thenReturn(7L);
         when(customer.getEmail()).thenReturn("client@bank.bg");
+        BankAccount activeAccount = new BankAccount("BG12BNKI12345678901234", BigDecimal.valueOf(100), AccountStatus.ACTIVE, customer);
         Loan pendingLoan = new Loan(
                 customer,
                 LoanType.CONSUMER,
@@ -112,6 +118,8 @@ class LoanGrantingServiceTest {
                 null
         );
         when(loanRepository.findById(99L)).thenReturn(Optional.of(pendingLoan));
+        when(bankAccountRepository.findFirstByOwnerIdAndStatusOrderByIdAsc(7L, AccountStatus.ACTIVE))
+                .thenReturn(Optional.of(activeAccount));
         when(loanRepository.save(any(Loan.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         LoanGrantResponse response = loanGrantingService.approveApplication(
@@ -127,6 +135,7 @@ class LoanGrantingServiceTest {
         assertThat(response.startDate()).isNotNull();
         assertThat(response.reviewedAt()).isNotNull();
         assertThat(response.repaymentSchedule()).hasSize(24);
+        assertThat(activeAccount.getBalance()).isEqualByComparingTo("12100");
         assertThat(logCaptor.getValue().getDecision()).isEqualTo(LoanReviewDecision.APPROVED);
         assertThat(logCaptor.getValue().getEmployeeEmail()).isEqualTo("employee@bank.bg");
     }

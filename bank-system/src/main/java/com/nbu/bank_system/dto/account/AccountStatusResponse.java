@@ -8,6 +8,7 @@ public record AccountStatusResponse(
         Long accountId,
         String iban,
         BigDecimal balance,
+        BigDecimal outstandingDebtAmount,
         AccountStatus status
 ) {
 }

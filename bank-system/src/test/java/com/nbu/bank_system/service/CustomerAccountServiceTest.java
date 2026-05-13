@@ -7,6 +7,7 @@ import com.nbu.bank_system.domain.model.customer.IndividualCustomer;
 import com.nbu.bank_system.dto.account.AccountStatusResponse;
 import com.nbu.bank_system.repository.BankAccountRepository;
 import com.nbu.bank_system.repository.CustomerRepository;
+import com.nbu.bank_system.repository.LoanRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -29,6 +30,9 @@ class CustomerAccountServiceTest {
     @Mock
     private CustomerRepository customerRepository;
 
+    @Mock
+    private LoanRepository loanRepository;
+
     @InjectMocks
     private CustomerAccountService customerAccountService;
 
@@ -47,7 +51,9 @@ class CustomerAccountServiceTest {
         );
 
         when(customerRepository.findByEmailIgnoreCase(email)).thenReturn(Optional.of(dummyCustomer));
-        when(bankAccountRepository.findFirstByOwnerIdOrderByIdAsc(dummyCustomer.getId())).thenReturn(Optional.of(mockAccount));
+        when(bankAccountRepository.findFirstByOwnerIdAndStatusOrderByIdAsc(dummyCustomer.getId(), AccountStatus.ACTIVE))
+                .thenReturn(Optional.of(mockAccount));
+        when(loanRepository.calculateOutstandingPrincipalDebt(dummyCustomer.getId())).thenReturn(BigDecimal.valueOf(2500));
 
         AccountStatusResponse response = customerAccountService.getAccountStatus(email);
 
@@ -55,9 +61,11 @@ class CustomerAccountServiceTest {
         assertEquals("BG12BNKI12345678901234", response.iban());
         assertEquals(AccountStatus.ACTIVE, response.status());
         assertEquals(BigDecimal.valueOf(100.50), response.balance());
+        assertEquals(BigDecimal.valueOf(2500), response.outstandingDebtAmount());
 
         verify(customerRepository, times(1)).findByEmailIgnoreCase(email);
-        verify(bankAccountRepository, times(1)).findFirstByOwnerIdOrderByIdAsc(dummyCustomer.getId());
+        verify(bankAccountRepository, times(1))
+                .findFirstByOwnerIdAndStatusOrderByIdAsc(dummyCustomer.getId(), AccountStatus.ACTIVE);
     }
 
     @Test

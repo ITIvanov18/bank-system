@@ -53,5 +53,6 @@ class CustomerAccountServiceIntegrationTest {
         assertEquals("BG99TEST12345678901234", response.iban());
         assertEquals(AccountStatus.ACTIVE, response.status());
         assertEquals(BigDecimal.valueOf(500.00).stripTrailingZeros(), response.balance().stripTrailingZeros());
+        assertEquals(BigDecimal.ZERO.stripTrailingZeros(), response.outstandingDebtAmount().stripTrailingZeros());
     }
 }

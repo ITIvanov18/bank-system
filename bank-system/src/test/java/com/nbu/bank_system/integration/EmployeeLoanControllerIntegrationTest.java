@@ -113,6 +113,13 @@ class EmployeeLoanControllerIntegrationTest {
 
     @Test
     void grantLoanPersistsLoanAndRepaymentScheduleThroughRealApplicationLayers() throws Exception {
+        BankAccount account = bankAccountRepository.save(new BankAccount(
+                "BG99BANK12345678901235",
+                BigDecimal.valueOf(1000),
+                AccountStatus.ACTIVE,
+                customer
+        ));
+
         String requestBody = """
                 {
                   "customerId": %d,
@@ -153,6 +160,9 @@ class EmployeeLoanControllerIntegrationTest {
                     assertThat(installment.getInstallmentNumber()).isEqualTo(1);
                     assertThat(installment.getStatus()).isEqualTo(InstallmentStatus.PENDING);
                 });
+
+        BankAccount creditedAccount = bankAccountRepository.findById(account.getId()).orElseThrow();
+        assertThat(creditedAccount.getBalance()).isEqualByComparingTo("13000.00");
     }
 
     @Test
@@ -250,6 +260,8 @@ class EmployeeLoanControllerIntegrationTest {
         assertThat(approvedLoan.getStatus()).isEqualTo(LoanStatus.ACTIVE);
         assertThat(approvedLoan.getReviewedAt()).isNotNull();
         assertThat(installmentRepository.findByLoanIdOrderByInstallmentNumberAsc(approvedLoan.getId())).hasSize(24);
+        assertThat(bankAccountRepository.findFirstByOwnerIdOrderByIdAsc(customer.getId()).orElseThrow().getBalance())
+                .isEqualByComparingTo("13000.00");
 
         mockMvc.perform(get("/api/employee/loans/applications/history")
                         .with(user("employee@bankai.bg").roles("EMPLOYEE"))

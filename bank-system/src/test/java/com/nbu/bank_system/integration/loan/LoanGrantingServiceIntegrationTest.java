@@ -104,7 +104,7 @@ class LoanGrantingServiceIntegrationTest {
         assertEquals(60, savedLoan.get().getInstallments().size(), "Трябва да има точно 60 генерирани вноски!");
 
        BankAccount updatedAccount = bankAccountRepository.findById(account.getId()).orElseThrow();
-        assertEquals(0, BigDecimal.valueOf(100.00).compareTo(updatedAccount.getBalance()),
-                "Балансът е 100, защото LoanGrantingService все още не превежда парите по сметката.");
+        assertEquals(0, BigDecimal.valueOf(5100.00).compareTo(updatedAccount.getBalance()),
+                "Одобреният кредит трябва да бъде преведен по активната сметка на клиента.");
     }
 }
