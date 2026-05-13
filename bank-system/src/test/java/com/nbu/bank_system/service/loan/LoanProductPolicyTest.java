@@ -33,7 +33,7 @@ class LoanProductPolicyTest {
         BigDecimal shorterTermRate = loanProductPolicy.calculateAnnualInterestRate(
                 LoanType.CONSUMER,
                 BigDecimal.valueOf(20_000),
-                18
+                12
         );
         BigDecimal longerTermRate = loanProductPolicy.calculateAnnualInterestRate(
                 LoanType.CONSUMER,
@@ -49,7 +49,7 @@ class LoanProductPolicyTest {
         BigDecimal highestRiskRate = loanProductPolicy.calculateAnnualInterestRate(
                 LoanType.CONSUMER,
                 BigDecimal.valueOf(1_000),
-                18
+                12
         );
         BigDecimal lowestRiskRate = loanProductPolicy.calculateAnnualInterestRate(
                 LoanType.CONSUMER,
@@ -62,11 +62,21 @@ class LoanProductPolicyTest {
     }
 
     @Test
+    void termsForReturnsConfiguredConsumerReferenceValues() {
+        LoanProductTerms terms = loanProductPolicy.termsFor(LoanType.CONSUMER);
+
+        assertThat(terms.minimumPrincipalAmount()).isEqualByComparingTo("1000");
+        assertThat(terms.maximumPrincipalAmount()).isEqualByComparingTo("40000");
+        assertThat(terms.minimumRepaymentTermMonths()).isEqualTo(12);
+        assertThat(terms.maximumRepaymentTermMonths()).isEqualTo(120);
+    }
+
+    @Test
     void termsForReturnsConfiguredMortgageReferenceValues() {
         LoanProductTerms terms = loanProductPolicy.termsFor(LoanType.MORTGAGE);
 
-        assertThat(terms.minimumAnnualInterestRate()).isEqualByComparingTo("2.25");
-        assertThat(terms.maximumAnnualInterestRate()).isEqualByComparingTo("3.45");
+        assertThat(terms.minimumAnnualInterestRate()).isEqualByComparingTo("3.10");
+        assertThat(terms.maximumAnnualInterestRate()).isEqualByComparingTo("6.85");
         assertThat(terms.minimumPrincipalAmount()).isEqualByComparingTo("3000");
         assertThat(terms.maximumPrincipalAmount()).isEqualByComparingTo("500000");
         assertThat(terms.principalStepAmount()).isEqualByComparingTo("500");
@@ -76,19 +86,42 @@ class LoanProductPolicyTest {
 
     @Test
     void calculateMortgageAnnualInterestRateStaysWithinConfiguredRange() {
-        BigDecimal lowestRiskRate = loanProductPolicy.calculateAnnualInterestRate(
+        BigDecimal shortTermRate = loanProductPolicy.calculateAnnualInterestRate(
                 LoanType.MORTGAGE,
                 BigDecimal.valueOf(500_000),
                 1
         );
-        BigDecimal highestRiskRate = loanProductPolicy.calculateAnnualInterestRate(
+        BigDecimal longTermRate = loanProductPolicy.calculateAnnualInterestRate(
                 LoanType.MORTGAGE,
                 BigDecimal.valueOf(3_000),
                 360
         );
 
-        assertThat(lowestRiskRate).isEqualByComparingTo("2.2500");
-        assertThat(highestRiskRate).isEqualByComparingTo("3.4500");
+        assertThat(shortTermRate).isBetween(BigDecimal.valueOf(3.10), BigDecimal.valueOf(6.85));
+        assertThat(longTermRate).isBetween(BigDecimal.valueOf(3.10), BigDecimal.valueOf(6.85));
+    }
+
+    @Test
+    void calculateMortgageAnnualInterestRateAddsPremiumForVeryShortTerms() {
+        BigDecimal veryShortSmallMortgageRate = loanProductPolicy.calculateAnnualInterestRate(
+                LoanType.MORTGAGE,
+                BigDecimal.valueOf(3_000),
+                5
+        );
+        BigDecimal veryShortLargeMortgageRate = loanProductPolicy.calculateAnnualInterestRate(
+                LoanType.MORTGAGE,
+                BigDecimal.valueOf(300_000),
+                1
+        );
+        BigDecimal standardMortgageRate = loanProductPolicy.calculateAnnualInterestRate(
+                LoanType.MORTGAGE,
+                BigDecimal.valueOf(300_000),
+                180
+        );
+
+        assertThat(veryShortSmallMortgageRate).isGreaterThan(BigDecimal.valueOf(6.00));
+        assertThat(veryShortLargeMortgageRate).isGreaterThan(BigDecimal.valueOf(5.50));
+        assertThat(standardMortgageRate).isLessThan(veryShortLargeMortgageRate);
     }
 
     @Test
@@ -96,7 +129,7 @@ class LoanProductPolicyTest {
         assertThatThrownBy(() -> loanProductPolicy.validateLoanRequest(
                 LoanType.CONSUMER,
                 BigDecimal.valueOf(999.99),
-                18
+                12
         ))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("minimum allowed amount");
@@ -107,7 +140,7 @@ class LoanProductPolicyTest {
         assertThatThrownBy(() -> loanProductPolicy.validateLoanRequest(
                 LoanType.CONSUMER,
                 BigDecimal.valueOf(10_000),
-                17
+                11
         ))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("minimum allowed term");

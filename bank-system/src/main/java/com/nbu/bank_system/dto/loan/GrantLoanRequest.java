@@ -29,7 +29,7 @@ public record GrantLoanRequest(
 
         @NotNull(message = "Repayment term is required.")
         @Min(value = 1, message = "Repayment term must be at least 1 month.")
-        @Max(value = 480, message = "Repayment term cannot exceed 480 months.")
+        @Max(value = 360, message = "Repayment term cannot exceed 360 months.")
         Integer repaymentTermMonths
 ) {
 }

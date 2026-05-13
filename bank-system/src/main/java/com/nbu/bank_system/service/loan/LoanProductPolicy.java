@@ -18,8 +18,9 @@ import org.springframework.stereotype.Component;
 public class LoanProductPolicy {
 
     private static final int RATE_SCALE = 4;
-    private static final BigDecimal MORTGAGE_TERM_WEIGHT = BigDecimal.valueOf(0.80);
-    private static final BigDecimal MORTGAGE_AMOUNT_WEIGHT = BigDecimal.valueOf(0.20);
+    private static final int SHORT_MORTGAGE_TERM_THRESHOLD_MONTHS = 36;
+    private static final BigDecimal MORTGAGE_TERM_RISK_WEIGHT = BigDecimal.valueOf(0.65);
+    private static final BigDecimal MORTGAGE_AMOUNT_RISK_WEIGHT = BigDecimal.valueOf(0.35);
     private static final BigDecimal CONSUMER_AMOUNT_WEIGHT = BigDecimal.valueOf(0.65);
     private static final BigDecimal CONSUMER_TERM_WEIGHT = BigDecimal.valueOf(0.35);
 
@@ -38,7 +39,7 @@ public class LoanProductPolicy {
                         BigDecimal.valueOf(1_000),
                         BigDecimal.valueOf(40_000),
                         BigDecimal.valueOf(5),
-                        18,
+                        12,
                         120
                 )
         );
@@ -48,9 +49,9 @@ public class LoanProductPolicy {
                 LoanType.MORTGAGE,
                 new LoanProductTerms(
                         LoanType.MORTGAGE,
-                        BigDecimal.valueOf(2.85),
-                        BigDecimal.valueOf(2.25),
-                        BigDecimal.valueOf(3.45),
+                        BigDecimal.valueOf(4.75),
+                        BigDecimal.valueOf(3.10),
+                        BigDecimal.valueOf(6.85),
                         BigDecimal.valueOf(3_000),
                         BigDecimal.valueOf(500_000),
                         BigDecimal.valueOf(500),
@@ -112,13 +113,16 @@ public class LoanProductPolicy {
 
         // Utilization показва каква част от допустимия диапазон за сума/срок използва клиентът.
         // Потребителският кредит е по-скъп при малка сума и кратък срок.
-        // Ипотечният кредит тежи основно по срока, но включва и ценова отстъпка при по-голяма сума.
+        // Ипотеката няма минимален срок, но нетипично кратки срокове се ценообразуват като по-рискови.
         BigDecimal amountUtilization = calculateAmountUtilization(terms, principalAmount);
         BigDecimal termUtilization = calculateTermUtilization(terms, repaymentTermMonths);
 
         if (loanType == LoanType.MORTGAGE) {
-            BigDecimal mortgageRiskScore = termUtilization.multiply(MORTGAGE_TERM_WEIGHT)
-                    .add(BigDecimal.ONE.subtract(amountUtilization).multiply(MORTGAGE_AMOUNT_WEIGHT))
+            BigDecimal shortTermRisk = calculateShortMortgageTermRisk(repaymentTermMonths);
+            BigDecimal termRisk = termUtilization.max(shortTermRisk);
+            BigDecimal amountRisk = BigDecimal.ONE.subtract(amountUtilization);
+            BigDecimal mortgageRiskScore = termRisk.multiply(MORTGAGE_TERM_RISK_WEIGHT)
+                    .add(amountRisk.multiply(MORTGAGE_AMOUNT_RISK_WEIGHT))
                     .min(BigDecimal.ONE)
                     .max(BigDecimal.ZERO);
 
@@ -172,5 +176,17 @@ public class LoanProductPolicy {
                 .max(BigDecimal.ZERO)
                 .divide(BigDecimal.valueOf(termRange), RATE_SCALE, RoundingMode.HALF_UP)
                 .min(BigDecimal.ONE);
+    }
+
+    private BigDecimal calculateShortMortgageTermRisk(int repaymentTermMonths) {
+        if (repaymentTermMonths >= SHORT_MORTGAGE_TERM_THRESHOLD_MONTHS) {
+            return BigDecimal.ZERO;
+        }
+
+        int termRange = SHORT_MORTGAGE_TERM_THRESHOLD_MONTHS - 1;
+        return BigDecimal.valueOf(SHORT_MORTGAGE_TERM_THRESHOLD_MONTHS - repaymentTermMonths)
+                .divide(BigDecimal.valueOf(termRange), RATE_SCALE, RoundingMode.HALF_UP)
+                .min(BigDecimal.ONE)
+                .max(BigDecimal.ZERO);
     }
 }
