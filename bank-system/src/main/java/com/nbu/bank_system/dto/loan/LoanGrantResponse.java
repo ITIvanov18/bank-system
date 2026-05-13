@@ -2,6 +2,7 @@ package com.nbu.bank_system.dto.loan;
 
 import com.nbu.bank_system.domain.enums.LoanStatus;
 import com.nbu.bank_system.domain.enums.LoanType;
+import com.nbu.bank_system.domain.enums.CustomerType;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -10,6 +11,9 @@ import java.util.List;
 public record LoanGrantResponse(
         Long loanId,
         Long customerId,
+        String customerEmail,
+        String customerDisplayName,
+        CustomerType customerType,
         LoanType loanType,
         BigDecimal principalAmount,
         BigDecimal annualInterestRate,

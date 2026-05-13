@@ -75,6 +75,7 @@ export interface AccountStatusResponse {
   accountId: number | null;
   iban: string | null;
   balance: number | null;
+  outstandingDebtAmount: number | null;
   status: BankAccountStatus | null;
 }
 
@@ -85,5 +86,63 @@ export interface AccountOpeningResponse {
   balance: number;
   status: BankAccountStatus;
   message: string;
+}
+
+export type LoanType = 'CONSUMER' | 'MORTGAGE';
+export type LoanStatus = 'PENDING' | 'ACTIVE' | 'REJECTED' | 'CLOSED';
+export type LoanReviewDecision = 'APPROVED' | 'REJECTED';
+
+export interface LoanApplicationRequest {
+  loanType: LoanType;
+  principalAmount: number;
+  repaymentTermMonths: number;
+}
+
+export interface InstallmentResponse {
+  installmentId: number;
+  installmentNumber: number;
+  dueDate: string;
+  monthlyInstallmentAmount: number;
+  principalPart: number;
+  interestPart: number;
+  remainingBalance: number;
+  status: 'PENDING' | 'PAID' | 'OVERDUE';
+}
+
+export interface LoanApplicationResponse {
+  loanId: number;
+  customerId: number;
+  customerEmail: string | null;
+  customerDisplayName: string | null;
+  customerType: CustomerType | null;
+  loanType: LoanType;
+  principalAmount: number;
+  annualInterestRate: number;
+  repaymentTermMonths: number;
+  status: LoanStatus;
+  startDate: string | null;
+  reviewedAt: string | null;
+  monthlyInstallmentAmount: number;
+  repaymentSchedule: InstallmentResponse[];
+  message: string;
+}
+
+export interface LoanReviewRequest {
+  decisionNote?: string;
+}
+
+export interface LoanReviewHistoryItem {
+  logId: number;
+  loanId: number;
+  customerId: number;
+  customerEmail: string;
+  employeeEmail: string;
+  decision: LoanReviewDecision;
+  loanType: LoanType;
+  principalAmount: number;
+  annualInterestRate: number;
+  repaymentTermMonths: number;
+  decisionNote: string | null;
+  decidedAt: string;
 }
 

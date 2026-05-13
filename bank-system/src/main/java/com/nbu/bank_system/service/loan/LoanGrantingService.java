@@ -1,9 +1,12 @@
 package com.nbu.bank_system.service.loan;
 
 import com.nbu.bank_system.domain.model.customer.Customer;
+import com.nbu.bank_system.domain.model.customer.CorporateCustomer;
+import com.nbu.bank_system.domain.model.customer.IndividualCustomer;
 import com.nbu.bank_system.domain.model.loan.Installment;
 import com.nbu.bank_system.domain.model.loan.Loan;
 import com.nbu.bank_system.domain.model.loan.LoanReviewLog;
+import com.nbu.bank_system.domain.model.account.BankAccount;
 import com.nbu.bank_system.domain.enums.AccountStatus;
 import com.nbu.bank_system.domain.enums.LoanStatus;
 import com.nbu.bank_system.domain.enums.LoanReviewDecision;
@@ -120,6 +123,7 @@ public class LoanGrantingService {
                 startDate
         );
 
+        BankAccount activeAccount = getActiveAccount(customer.getId());
         List<Installment> installments = repaymentScheduleGenerator.generate(
                 request.principalAmount(),
                 annualInterestRate,
@@ -127,6 +131,7 @@ public class LoanGrantingService {
                 startDate
         );
         installments.forEach(loan::addInstallment);
+        activeAccount.credit(request.principalAmount());
 
         // CascadeType.ALL в Loan->Installment записва и погасителния план заедно с кредита
         Loan savedLoan = loanRepository.save(loan);
@@ -149,6 +154,7 @@ public class LoanGrantingService {
 
         LocalDate startDate = LocalDate.now();
         loan.approve(startDate, LocalDateTime.now());
+        BankAccount activeAccount = getActiveAccount(loan.getCustomer().getId());
 
         List<Installment> installments = repaymentScheduleGenerator.generate(
                 loan.getPrincipalAmount(),
@@ -157,6 +163,7 @@ public class LoanGrantingService {
                 startDate
         );
         installments.forEach(loan::addInstallment);
+        activeAccount.credit(loan.getPrincipalAmount());
 
         Loan savedLoan = loanRepository.save(loan);
         loanReviewLogRepository.save(new LoanReviewLog(
@@ -210,6 +217,9 @@ public class LoanGrantingService {
         return new LoanGrantResponse(
                 loan.getId(),
                 loan.getCustomer().getId(),
+                loan.getCustomer().getEmail(),
+                resolveCustomerDisplayName(loan.getCustomer()),
+                loan.getCustomer().getCustomerType(),
                 loan.getLoanType(),
                 loan.getPrincipalAmount(),
                 loan.getAnnualInterestRate(),
@@ -253,10 +263,27 @@ public class LoanGrantingService {
         );
     }
 
+    private String resolveCustomerDisplayName(Customer customer) {
+        if (customer instanceof IndividualCustomer individualCustomer) {
+            return individualCustomer.getFirstName() + " " + individualCustomer.getLastName();
+        }
+
+        if (customer instanceof CorporateCustomer corporateCustomer) {
+            return corporateCustomer.getCompanyName();
+        }
+
+        return customer.getEmail();
+    }
+
     private void ensurePendingApplication(Loan loan) {
         if (loan.getStatus() != LoanStatus.PENDING) {
             throw new IllegalStateException("Only pending loan applications can be reviewed.");
         }
+    }
+
+    private BankAccount getActiveAccount(Long customerId) {
+        return bankAccountRepository.findFirstByOwnerIdAndStatusOrderByIdAsc(customerId, AccountStatus.ACTIVE)
+                .orElseThrow(() -> new IllegalArgumentException("Customer must have an active bank account before receiving loan funds."));
     }
 
     private String normalizeDecisionNote(String decisionNote) {

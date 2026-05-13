@@ -2,12 +2,13 @@ import { useEffect, useMemo, useState, type FormEvent } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { getCustomerAccountStatus, openCustomerAccount } from '../api/account';
 import { extractApiErrorMessage } from '../api/http';
-import type { AccountStatusResponse } from '../types/auth';
+import { submitLoanApplication } from '../api/loan';
+import type { AccountStatusResponse, LoanApplicationResponse, LoanType } from '../types/auth';
 import { clearSession, getSession } from '../utils/authStorage';
 import '../index.css';
 
 type LoanApplicationDraft = {
-  loanType: 'CONSUMER' | 'MORTGAGE';
+  loanType: LoanType;
   principalAmount: string;
   repaymentTermMonths: string;
 };
@@ -31,9 +32,9 @@ const loanProductLimits = {
   },
   MORTGAGE: {
     label: 'Mortgage loan',
-    baseRate: 2.85,
-    minimumRate: 2.25,
-    maximumRate: 3.45,
+    baseRate: 4.75,
+    minimumRate: 3.1,
+    maximumRate: 6.85,
     minimumPrincipalAmount: 3_000,
     maximumPrincipalAmount: 500_000,
     principalStepAmount: 500,
@@ -48,6 +49,7 @@ const loanProductLimits = {
 } as const;
 
 const monthsInYear = 12;
+const shortMortgageTermThresholdMonths = 36;
 type LoanProductLimits = typeof loanProductLimits[keyof typeof loanProductLimits];
 
 function formatMoney(value: number | null | undefined) {
@@ -55,6 +57,11 @@ function formatMoney(value: number | null | undefined) {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   })} EUR`;
+}
+
+function formatDebt(value: number | null | undefined) {
+  const debtAmount = Math.max(value ?? 0, 0);
+  return debtAmount === 0 ? formatMoney(0) : `-${formatMoney(debtAmount)}`;
 }
 
 function formatOptionalMoney(value: number | null) {
@@ -137,7 +144,11 @@ function calculateEstimatedAnnualInterestRate(loanApplicationDraft: LoanApplicat
   const termUtilization = Math.min(Math.max((repaymentTermMonths - minimumTerm) / termRange, 0), 1);
 
   if (loanApplicationDraft.loanType === 'MORTGAGE') {
-    const mortgageRiskScore = Math.min(termUtilization * 0.8 + (1 - amountUtilization) * 0.2, 1);
+    const shortTermRisk = repaymentTermMonths >= shortMortgageTermThresholdMonths
+      ? 0
+      : (shortMortgageTermThresholdMonths - repaymentTermMonths) / (shortMortgageTermThresholdMonths - 1);
+    const termRisk = Math.max(termUtilization, shortTermRisk);
+    const mortgageRiskScore = Math.min(termRisk * 0.65 + (1 - amountUtilization) * 0.35, 1);
     return product.minimumRate + (product.maximumRate - product.minimumRate) * mortgageRiskScore;
   }
 
@@ -214,6 +225,8 @@ export function DashboardPage() {
   });
 
   const [loanApplicationMessage, setLoanApplicationMessage] = useState<string | null>(null);
+  const [loanApplicationResult, setLoanApplicationResult] = useState<LoanApplicationResponse | null>(null);
+  const [isSubmittingLoanApplication, setIsSubmittingLoanApplication] = useState(false);
   const [isLogoAvailable, setIsLogoAvailable] = useState(true);
 
   const isAccountPanelLoading = !hasLoadedStatus || isLoadingStatus;
@@ -310,6 +323,7 @@ export function DashboardPage() {
         accountId: response.accountId,
         iban: response.iban,
         balance: response.balance,
+        outstandingDebtAmount: 0,
         status: response.status,
       });
       setAccountSuccess(response.message);
@@ -326,6 +340,7 @@ export function DashboardPage() {
       [field]: value,
     }));
     setLoanApplicationMessage(null);
+    setLoanApplicationResult(null);
   }
 
   function handleAmountChange(delta: number) {
@@ -347,7 +362,7 @@ export function DashboardPage() {
     updateLoanApplicationDraft('repaymentTermMonths', next.toString());
   }
 
-  function handleLoanApplicationSubmit(event: FormEvent<HTMLFormElement>) {
+  async function handleLoanApplicationSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
     if (loanApplicationValidationMessage) {
@@ -355,7 +370,23 @@ export function DashboardPage() {
       return;
     }
 
-    setLoanApplicationMessage('Loan request prepared for employee review. The approval workflow will be connected next.');
+    setIsSubmittingLoanApplication(true);
+    setLoanApplicationMessage(null);
+    setLoanApplicationResult(null);
+
+    try {
+      const response = await submitLoanApplication({
+        loanType: loanApplicationDraft.loanType,
+        principalAmount: Number(loanApplicationDraft.principalAmount),
+        repaymentTermMonths: Number(loanApplicationDraft.repaymentTermMonths),
+      });
+      setLoanApplicationResult(response);
+      setLoanApplicationMessage(`Loan application #${response.loanId} was submitted for employee review.`);
+    } catch (submitError) {
+      setLoanApplicationMessage(extractApiErrorMessage(submitError, 'Loan application could not be submitted.'));
+    } finally {
+      setIsSubmittingLoanApplication(false);
+    }
   }
 
   return (
@@ -489,15 +520,15 @@ export function DashboardPage() {
             {isLogoAvailable ? (
               <img
                 src="/bankai-logo.png"
-                alt="BANKλI"
+                alt="BANKΛI"
                 style={{ width: '60px', height: 'auto', background: 'transparent' }}
                 onError={() => setIsLogoAvailable(false)}
               />
             ) : (
-              <span style={{ fontSize: '2rem', fontWeight: 'bold', color: '#3b82f6' }}>Bλ</span>
+              <span style={{ fontSize: '2rem', fontWeight: 'bold', color: '#3b82f6' }}>BΛ</span>
             )}
             <div>
-              <span style={{ fontSize: '1.8rem', fontWeight: 'bold', color: 'white' }}>BANKλI</span>
+              <span style={{ fontSize: '1.8rem', fontWeight: 'bold', color: 'white' }}>BANKΛI</span>
             </div>
           </Link>
 
@@ -557,6 +588,12 @@ export function DashboardPage() {
                   <span>Available balance</span>
                   <strong>{formatMoney(accountStatus.balance)}</strong>
                   <small>{formatCustomerReference(session?.customerId)}</small>
+                </div>
+
+                <div className={`bank-account-debt-card ${(accountStatus.outstandingDebtAmount ?? 0) > 0 ? 'bank-account-debt-card-active' : ''}`}>
+                  <span>Outstanding debt</span>
+                  <strong>{formatDebt(accountStatus.outstandingDebtAmount)}</strong>
+                  <small>Active loan principal</small>
                 </div>
 
                 <div className="bank-account-meta-grid">
@@ -621,7 +658,7 @@ export function DashboardPage() {
 
               <div className="bank-rate-row">
                 <span>Consumer 5.20% - 6.70%</span>
-                <span>Mortgage 2.25% - 3.45%</span>
+                <span>Mortgage 3.10% - 6.85%</span>
               </div>
 
               <div className="bank-product-limit-grid">
@@ -822,12 +859,33 @@ export function DashboardPage() {
                 <p className="bank-form-message">{loanApplicationMessage || loanApplicationValidationMessage}</p>
               )}
 
+              {loanApplicationResult && (
+                <div className="bank-application-receipt" aria-live="polite">
+                  <div>
+                    <span>Application ID</span>
+                    <strong>#{loanApplicationResult.loanId}</strong>
+                  </div>
+                  <div>
+                    <span>Status</span>
+                    <strong>{loanApplicationResult.status}</strong>
+                  </div>
+                  <div>
+                    <span>Indicative rate</span>
+                    <strong>{loanApplicationResult.annualInterestRate.toFixed(2)}%</strong>
+                  </div>
+                </div>
+              )}
+
               <div className="bank-form-actions">
                 <button type="button" className="bank-ghost-button" onClick={() => setIsLoanApplicationOpen(false)}>
                   Cancel
                 </button>
-                <button type="submit" className="bank-primary-button" disabled={Boolean(loanApplicationValidationMessage)}>
-                  Submit request
+                <button
+                  type="submit"
+                  className="bank-primary-button"
+                  disabled={Boolean(loanApplicationValidationMessage) || isSubmittingLoanApplication}
+                >
+                  {isSubmittingLoanApplication ? 'Submitting...' : 'Submit request'}
                 </button>
               </div>
             </form>
