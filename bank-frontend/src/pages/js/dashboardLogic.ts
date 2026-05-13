@@ -68,28 +68,23 @@ export function useCountUp(value: number | null | undefined, durationMs = 1500) 
       setDisplayValue(targetValue);
       return;
     }
-
     if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
       setDisplayValue(targetValue);
       return;
     }
-
     const startValue = previousValueRef.current;
     const difference = targetValue - startValue;
     const startTime = window.performance.now();
     let animationFrameId = 0;
     previousValueRef.current = targetValue;
-
     function animate(currentTime: number) {
       const progress = Math.min((currentTime - startTime) / durationMs, 1);
       const easedProgress = 1 - ((1 - progress) ** 3);
       setDisplayValue(startValue + (difference * easedProgress));
-
       if (progress < 1) {
         animationFrameId = window.requestAnimationFrame(animate);
       }
     }
-
     animationFrameId = window.requestAnimationFrame(animate);
     return () => window.cancelAnimationFrame(animationFrameId);
   }, [targetValue, durationMs]);
@@ -109,7 +104,6 @@ export function formatTermLimits(product: LoanProductLimits) {
   if (product.minimumRepaymentTermMonths === null) {
     return `No product minimum, up to ${product.maximumRepaymentTermMonths} months`;
   }
-
   return `${product.minimumRepaymentTermMonths} - ${product.maximumRepaymentTermMonths} months`;
 }
 
@@ -121,43 +115,30 @@ export function getLoanApplicationValidationMessage(loanApplicationDraft: LoanAp
   if (!Number.isFinite(principalAmount) || principalAmount <= 0) {
     return 'Enter a valid loan amount.';
   }
-
   if (principalAmount < product.minimumPrincipalAmount) {
     return `Minimum amount for ${product.label.toLowerCase()} is ${formatMoney(product.minimumPrincipalAmount)}.`;
   }
-
   if (principalAmount > product.maximumPrincipalAmount) {
     return `Maximum amount for ${product.label.toLowerCase()} is ${formatMoney(product.maximumPrincipalAmount)}.`;
   }
-
   const stepRemainder = (principalAmount - product.minimumPrincipalAmount) % product.principalStepAmount;
   if (Math.abs(stepRemainder) > 0.000001 && Math.abs(stepRemainder - product.principalStepAmount) > 0.000001) {
     return `Amount must increase in steps of ${formatMoney(product.principalStepAmount)} for ${product.label.toLowerCase()}.`;
   }
-
   if (!Number.isInteger(repaymentTermMonths) || repaymentTermMonths <= 0) {
     return 'Enter a valid repayment term in months.';
   }
-
-  if (
-    product.minimumRepaymentTermMonths !== null
-    && repaymentTermMonths < product.minimumRepaymentTermMonths
-  ) {
+  if (product.minimumRepaymentTermMonths !== null && repaymentTermMonths < product.minimumRepaymentTermMonths) {
     return `Minimum term for ${product.label.toLowerCase()} is ${product.minimumRepaymentTermMonths} months.`;
   }
-
   if (repaymentTermMonths > product.maximumRepaymentTermMonths) {
     return `Maximum term for ${product.label.toLowerCase()} is ${product.maximumRepaymentTermMonths} months.`;
   }
-
   return null;
 }
 
 export function formatCustomerReference(customerId: number | null | undefined) {
-  if (!customerId) {
-    return 'Not assigned';
-  }
-
+  if (!customerId) return 'Not assigned';
   return `BK-${customerId.toString().padStart(6, '0')}`;
 }
 
@@ -170,10 +151,7 @@ export function formatLoanStatus(value: LoanStatus) {
 }
 
 export function formatDateTime(value: string | null | undefined) {
-  if (!value) {
-    return '-';
-  }
-
+  if (!value) return '-';
   return new Intl.DateTimeFormat('en-GB', {
     dateStyle: 'medium',
     timeStyle: 'short',
@@ -210,44 +188,52 @@ export function calculateEstimatedAnnualInterestRate(loanApplicationDraft: LoanA
 
 export function calculateMonthlyPayment(principalAmount: number, annualInterestRate: number, repaymentTermMonths: number) {
   const monthlyInterestRate = annualInterestRate / 100 / monthsInYear;
-
-  if (monthlyInterestRate === 0) {
-    return principalAmount / repaymentTermMonths;
-  }
-
+  if (monthlyInterestRate === 0) return principalAmount / repaymentTermMonths;
   const compoundFactor = (1 + monthlyInterestRate) ** repaymentTermMonths;
   return principalAmount * monthlyInterestRate * compoundFactor / (compoundFactor - 1);
 }
 
-export function calculateApr(
-  principalAmount: number,
-  monthlyPaymentWithFee: number,
-  repaymentTermMonths: number,
-  upfrontFees: number
-) {
+export function calculateApr(principalAmount: number, monthlyPaymentWithFee: number, repaymentTermMonths: number, upfrontFees: number) {
   const netReceivedAmount = principalAmount - upfrontFees;
-
-  if (netReceivedAmount <= 0) {
-    return 0;
-  }
-
+  if (netReceivedAmount <= 0) return 0;
   let low = 0;
   let high = 1;
-
-  for (let iteration = 0; iteration < 80; iteration += 1) {
+  for (let i = 0; i < 80; i++) {
     const middle = (low + high) / 2;
     let presentValue = 0;
-
-    for (let month = 1; month <= repaymentTermMonths; month += 1) {
+    for (let month = 1; month <= repaymentTermMonths; month++) {
       presentValue += monthlyPaymentWithFee / ((1 + middle) ** month);
     }
+    if (presentValue > netReceivedAmount) low = middle; else high = middle;
+  }
+  return (((1 + (low + high) / 2) ** monthsInYear) - 1) * 100;
+}
 
-    if (presentValue > netReceivedAmount) {
-      low = middle;
-    } else {
-      high = middle;
-    }
+export function calculateFullLoanDetails(
+  loanApplicationDraft: LoanApplicationDraft,
+  estimatedAnnualInterestRate: number | null,
+  selectedLoanProduct: LoanProductLimits,
+  validationMessage: string | null
+) {
+  const principalAmount = Number(loanApplicationDraft.principalAmount);
+  const repaymentTermMonths = Number(loanApplicationDraft.repaymentTermMonths);
+
+  if (
+    validationMessage ||
+    estimatedAnnualInterestRate === null ||
+    !Number.isFinite(principalAmount) ||
+    !Number.isFinite(repaymentTermMonths) ||
+    repaymentTermMonths <= 0
+  ) {
+    return { monthlyPayment: null, monthlyPaymentWithFee: null, totalInterest: null, totalDueAmount: null, apr: null };
   }
 
-  return (((1 + (low + high) / 2) ** monthsInYear) - 1) * 100;
+  const monthlyPayment = calculateMonthlyPayment(principalAmount, estimatedAnnualInterestRate, repaymentTermMonths);
+  const monthlyPaymentWithFee = monthlyPayment + selectedLoanProduct.monthlyServiceFee;
+  const totalInterest = monthlyPayment * repaymentTermMonths - principalAmount;
+  const upfrontFees = selectedLoanProduct.upfrontFees.analysis + selectedLoanProduct.upfrontFees.collateralAssessment;
+  const totalDueAmount = monthlyPaymentWithFee * repaymentTermMonths + upfrontFees;
+  const apr = calculateApr(principalAmount, monthlyPaymentWithFee, repaymentTermMonths, upfrontFees);
+
+  return { monthlyPayment, monthlyPaymentWithFee, totalInterest, totalDueAmount, apr };
 }
