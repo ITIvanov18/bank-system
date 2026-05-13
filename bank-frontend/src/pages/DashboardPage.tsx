@@ -197,6 +197,7 @@ export function DashboardPage() {
   const roleLabel = session?.role === 'EMPLOYEE'
     ? 'EMPLOYEE'
     : (customerType === 'INDIVIDUAL' || customerType === 'CORPORATE' ? customerType : 'CUSTOMER');
+
   const [accountStatus, setAccountStatus] = useState<AccountStatusResponse | null>(null);
   const [isLoadingStatus, setIsLoadingStatus] = useState(session?.role === 'CUSTOMER');
   const [hasLoadedStatus, setHasLoadedStatus] = useState(session?.role !== 'CUSTOMER');
@@ -204,24 +205,31 @@ export function DashboardPage() {
   const [accountError, setAccountError] = useState<string | null>(null);
   const [accountSuccess, setAccountSuccess] = useState<string | null>(null);
   const [isLoanApplicationOpen, setIsLoanApplicationOpen] = useState(false);
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+
   const [loanApplicationDraft, setLoanApplicationDraft] = useState<LoanApplicationDraft>({
     loanType: 'CONSUMER',
     principalAmount: '12000',
     repaymentTermMonths: '24',
   });
+
   const [loanApplicationMessage, setLoanApplicationMessage] = useState<string | null>(null);
   const [isLogoAvailable, setIsLogoAvailable] = useState(true);
+
   const isAccountPanelLoading = !hasLoadedStatus || isLoadingStatus;
   const hasActiveAccount = accountStatus?.hasAccount && accountStatus.status === 'ACTIVE';
   const selectedLoanProduct = loanProductLimits[loanApplicationDraft.loanType];
+
   const loanApplicationValidationMessage = useMemo(
     () => getLoanApplicationValidationMessage(loanApplicationDraft),
     [loanApplicationDraft]
   );
+
   const estimatedAnnualInterestRate = useMemo(
     () => loanApplicationValidationMessage ? null : calculateEstimatedAnnualInterestRate(loanApplicationDraft),
     [loanApplicationDraft, loanApplicationValidationMessage]
   );
+
   const loanCalculation = useMemo(() => {
     const principalAmount = Number(loanApplicationDraft.principalAmount);
     const repaymentTermMonths = Number(loanApplicationDraft.repaymentTermMonths);
@@ -320,6 +328,25 @@ export function DashboardPage() {
     setLoanApplicationMessage(null);
   }
 
+  function handleAmountChange(delta: number) {
+    const current = Number(loanApplicationDraft.principalAmount) || 0;
+    const step = selectedLoanProduct.principalStepAmount;
+    let next = current + (delta * step);
+    if (next < selectedLoanProduct.minimumPrincipalAmount) next = selectedLoanProduct.minimumPrincipalAmount;
+    if (next > selectedLoanProduct.maximumPrincipalAmount) next = selectedLoanProduct.maximumPrincipalAmount;
+    updateLoanApplicationDraft('principalAmount', next.toString());
+  }
+
+  function handleTermChange(delta: number) {
+    const current = Number(loanApplicationDraft.repaymentTermMonths) || 0;
+    const min = selectedLoanProduct.minimumRepaymentTermMonths ?? 1;
+    const max = selectedLoanProduct.maximumRepaymentTermMonths;
+    let next = current + delta;
+    if (next < min) next = min;
+    if (next > max) next = max;
+    updateLoanApplicationDraft('repaymentTermMonths', next.toString());
+  }
+
   function handleLoanApplicationSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
@@ -333,6 +360,107 @@ export function DashboardPage() {
 
   return (
     <div className="bank-dashboard-shell">
+      <style>
+        {`
+          .custom-dropdown-container {
+            position: relative;
+            width: 100%;
+          }
+          .custom-dropdown-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            padding: 12px 16px;
+            color: white;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: border-color 0.2s;
+          }
+          .custom-dropdown-header:hover {
+            border-color: rgba(255, 255, 255, 0.3);
+          }
+          .custom-dropdown-list {
+            position: absolute;
+            top: calc(100% + 4px);
+            left: 0;
+            width: 100%;
+            background: #1e293b;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            z-index: 50;
+            overflow: hidden;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+          }
+          .custom-dropdown-item {
+            padding: 12px 16px;
+            color: white;
+            cursor: pointer;
+            transition: background 0.2s;
+          }
+          .custom-dropdown-item:hover {
+            background: rgba(255, 255, 255, 0.1);
+          }
+          .custom-number-input-wrapper {
+            display: flex;
+            align-items: center;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            transition: border-color 0.2s;
+            overflow: hidden;
+          }
+          .custom-number-input-wrapper:focus-within {
+            border-color: #3b82f6;
+          }
+          .custom-number-input-wrapper input {
+            flex: 1;
+            background: transparent;
+            border: none;
+            color: white;
+            padding: 12px 16px;
+            font-size: 1rem;
+            outline: none;
+            -moz-appearance: textfield;
+          }
+          .custom-number-input-wrapper input::-webkit-inner-spin-button,
+          .custom-number-input-wrapper input::-webkit-outer-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+          }
+          .custom-suffix {
+            color: #94a3b8;
+            padding-right: 12px;
+            font-size: 0.9rem;
+          }
+          .custom-spinners {
+            display: flex;
+            flex-direction: column;
+            border-left: 1px solid rgba(255, 255, 255, 0.1);
+          }
+          .custom-spinner-btn {
+            background: transparent;
+            border: none;
+            color: #94a3b8;
+            padding: 4px 12px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.2s, color 0.2s;
+          }
+          .custom-spinner-btn:hover {
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+          }
+          .custom-spinner-btn:first-child {
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+          }
+        `}
+      </style>
+
       <header className="bank-dashboard-topbar">
         <div className="bank-dashboard-brand">
           <span className="bank-brand-logo-frame">
@@ -523,14 +651,24 @@ export function DashboardPage() {
             <form className="bank-loan-form" onSubmit={handleLoanApplicationSubmit} noValidate>
               <label className="form-field">
                 <span className="form-label">Loan type</span>
-                <select
-                  className="glass-input bank-calculator-select"
-                  value={loanApplicationDraft.loanType}
-                  onChange={(event) => updateLoanApplicationDraft('loanType', event.target.value as LoanApplicationDraft['loanType'])}
-                >
-                  <option value="CONSUMER">Consumer loan</option>
-                  <option value="MORTGAGE">Mortgage loan</option>
-                </select>
+                <div className="custom-dropdown-container">
+                  <div className="custom-dropdown-header" onClick={() => setIsDropdownOpen(!isDropdownOpen)}>
+                    {selectedLoanProduct.label}
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <polyline points="6 9 12 15 18 9"></polyline>
+                    </svg>
+                  </div>
+                  {isDropdownOpen && (
+                    <div className="custom-dropdown-list">
+                      <div className="custom-dropdown-item" onClick={() => { updateLoanApplicationDraft('loanType', 'CONSUMER'); setIsDropdownOpen(false); }}>
+                        Consumer loan
+                      </div>
+                      <div className="custom-dropdown-item" onClick={() => { updateLoanApplicationDraft('loanType', 'MORTGAGE'); setIsDropdownOpen(false); }}>
+                        Mortgage loan
+                      </div>
+                    </div>
+                  )}
+                </div>
               </label>
 
               <div className="bank-selected-product-terms">
@@ -546,32 +684,42 @@ export function DashboardPage() {
 
               <label className="form-field">
                 <span className="form-label">Amount</span>
-                <div className="bank-calculator-input">
+                <div className="custom-number-input-wrapper">
                   <input
                     type="number"
-                    min={selectedLoanProduct.minimumPrincipalAmount}
-                    max={selectedLoanProduct.maximumPrincipalAmount}
-                    step={selectedLoanProduct.principalStepAmount}
                     value={loanApplicationDraft.principalAmount}
                     onChange={(event) => updateLoanApplicationDraft('principalAmount', event.target.value)}
                   />
-                  <span>EUR</span>
+                  <span className="custom-suffix">EUR</span>
+                  <div className="custom-spinners">
+                    <button type="button" className="custom-spinner-btn" onClick={() => handleAmountChange(1)}>
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="18 15 12 9 6 15"></polyline></svg>
+                    </button>
+                    <button type="button" className="custom-spinner-btn" onClick={() => handleAmountChange(-1)}>
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                    </button>
+                  </div>
                 </div>
                 <p className="bank-field-hint">Allowed: {formatAmountLimits(selectedLoanProduct)}. Step: {formatMoney(selectedLoanProduct.principalStepAmount)}.</p>
               </label>
 
               <label className="form-field">
                 <span className="form-label">Term in months</span>
-                <div className="bank-calculator-input">
+                <div className="custom-number-input-wrapper">
                   <input
                     type="number"
-                    min={selectedLoanProduct.minimumRepaymentTermMonths ?? 1}
-                    max={selectedLoanProduct.maximumRepaymentTermMonths}
-                    step="1"
                     value={loanApplicationDraft.repaymentTermMonths}
                     onChange={(event) => updateLoanApplicationDraft('repaymentTermMonths', event.target.value)}
                   />
-                  <span>mo.</span>
+                  <span className="custom-suffix">mo.</span>
+                  <div className="custom-spinners">
+                    <button type="button" className="custom-spinner-btn" onClick={() => handleTermChange(1)}>
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="18 15 12 9 6 15"></polyline></svg>
+                    </button>
+                    <button type="button" className="custom-spinner-btn" onClick={() => handleTermChange(-1)}>
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                    </button>
+                  </div>
                 </div>
                 <p className="bank-field-hint">Allowed: {formatTermLimits(selectedLoanProduct)}.</p>
               </label>
