@@ -62,7 +62,7 @@ export function LoginPage() {
         <div className="brand-badge">Secure access</div>
 
         <h1 className="main-title page-title">Sign in</h1>
-        <p className="subtitle page-subtitle">Welcome back to NBU Bank System</p>
+        <p className="subtitle page-subtitle">Welcome back to BANKΛI</p>
 
         {error && (
           <div className="status-banner status-banner-error status-banner-inline">

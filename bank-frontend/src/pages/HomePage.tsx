@@ -44,7 +44,7 @@ export function HomePage() {
                 <Link to="/" className="enterprise-logo-wrap" style={{ textDecoration: 'none' }}>
                   <img src="/bankai-logo.png" alt="BANKλI" style={{ width: '60px' }} />
                   <div>
-                    <span className="enterprise-logo-text">BANKλI</span>
+                    <span className="enterprise-logo-text">BANKΛI</span>
                     <span className="enterprise-logo-subtitle">Premium AI FinTech</span>
                   </div>
                 </Link>

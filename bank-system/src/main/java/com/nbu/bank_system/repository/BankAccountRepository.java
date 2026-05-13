@@ -7,9 +7,9 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface BankAccountRepository extends JpaRepository<BankAccount, Long> {
 
-    boolean existsByOwnerId(Long ownerId);
-
     Optional<BankAccount> findFirstByOwnerIdOrderByIdAsc(Long ownerId);
+
+    Optional<BankAccount> findFirstByOwnerIdAndStatusOrderByIdAsc(Long ownerId, AccountStatus status);
 
     boolean existsByOwnerIdAndStatus(Long ownerId, AccountStatus status);
 

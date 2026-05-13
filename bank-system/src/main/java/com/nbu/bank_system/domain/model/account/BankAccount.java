@@ -18,6 +18,9 @@ import jakarta.validation.constraints.Digits;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
+import lombok.Getter;
+import lombok.Setter;
+
 import java.math.BigDecimal;
 
 /**
@@ -25,6 +28,7 @@ import java.math.BigDecimal;
    Съдържа уникален IBAN, текущ баланс и operational account status
  */
 
+@Getter
 @Entity
 @Table(
         name = "bank_accounts",
@@ -42,12 +46,14 @@ public class BankAccount extends BaseEntity {
     @Column(name = "iban", nullable = false, length = 34)
     private String iban;
 
+    @Setter
     @NotNull
     @Digits(integer = 19, fraction = 2)
-    @DecimalMin(value = "0.00", inclusive = true)
+    @DecimalMin(value = "0.00")
     @Column(name = "balance", nullable = false, precision = 19, scale = 2)
     private BigDecimal balance;
 
+    @Setter
     @NotNull
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false, length = 20)
@@ -72,28 +78,12 @@ public class BankAccount extends BaseEntity {
         this.owner = owner;
     }
 
-    public String getIban() {
-        return iban;
+    public void credit(BigDecimal amount) {
+        if (amount == null || amount.signum() <= 0) {
+            throw new IllegalArgumentException("Credit amount must be positive.");
+        }
+        this.balance = this.balance.add(amount);
     }
 
-    public BigDecimal getBalance() {
-        return balance;
-    }
-
-    public AccountStatus getStatus() {
-        return status;
-    }
-
-    public Customer getOwner() {
-        return owner;
-    }
-
-    public void setBalance(BigDecimal balance) {
-        this.balance = balance;
-    }
-
-    public void setStatus(AccountStatus status) {
-        this.status = status;
-    }
 }
 
