@@ -149,7 +149,7 @@
 
 *Authentication entry point for customers and employees.*
 
-![Login](docs/screenshots/03-login.png)
+<img src="docs/screenshots/03-login.png" alt="Login" width="894">
 
 ### 4. First Login Password Change
 
@@ -185,7 +185,7 @@
 
 *Approved loan card with monthly annuity repayment schedule, principal, interest, remaining balance, and installment status.*
 
-![Repayment Schedule](docs/screenshots/09-repayment-schedule.png)
+<img src="docs/screenshots/09-repayment-schedule.png" alt="Login" width="850">
 
 ### 10. Payment History
 
