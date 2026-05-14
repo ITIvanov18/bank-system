@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState, type FormEvent } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { getCustomerAccountStatus, openCustomerAccount } from '../api/account';
 import { extractApiErrorMessage } from '../api/http';
 import { getLatestCustomerLoanApplication, submitLoanApplication } from '../api/loan';
@@ -54,7 +54,6 @@ export function DashboardPage() {
   const [latestLoanApplication, setLatestLoanApplication] = useState<CustomerLoanApplicationStatusResponse | null>(null);
   const [isLoadingLoanApplication, setIsLoadingLoanApplication] = useState(session?.role === 'CUSTOMER');
   const [isSubmittingLoanApplication, setIsSubmittingLoanApplication] = useState(false);
-  const [isLogoAvailable, setIsLogoAvailable] = useState(true);
 
   const isAccountPanelLoading = !hasLoadedStatus || isLoadingStatus;
   const hasActiveAccount = accountStatus?.hasAccount && accountStatus.status === 'ACTIVE';
@@ -184,26 +183,22 @@ export function DashboardPage() {
   return (
     <div className="bank-dashboard-shell">
       <header className="enterprise-nav">
-        <div style={{ display: 'flex', alignItems: 'center', gap: '3rem' }}>
-          <Link to="/" className="enterprise-logo-wrap" style={{ textDecoration: 'none' }}>
-            <img src="/bankai-logo.png" alt="BANKΛI" style={{ width: '60px' }} onError={() => setIsLogoAvailable(false)} />
+        <div className="enterprise-nav-left">
+          <div className="enterprise-logo-wrap">
+            <img className="enterprise-logo-image" src="/bankai-logo.png" alt="BANKΛI" />
             <div>
               <span className="enterprise-logo-text">BANKΛI</span>
               <span className="enterprise-logo-subtitle">Premium AI FinTech</span>
             </div>
-          </Link>
-          <nav style={{ display: 'flex', gap: '1rem' }}>
-            <Link to="/" className="custom-nav-pill custom-nav-pill-blue-light">Home</Link>
-            <Link to="/about" className="custom-nav-pill custom-nav-pill-blue-light">About Us</Link>
-          </nav>
+          </div>
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
-          <div style={{ textAlign: 'right' }}>
-            <span style={{ display: 'block', color: 'white', fontSize: '0.95rem', fontWeight: '500' }}>{customerDisplayName}</span>
-            <strong style={{ display: 'block', color: '#3b82f6', fontSize: '0.75rem', letterSpacing: '1px', textTransform: 'uppercase' }}>{roleLabel} CLIENT</strong>
+        <div className="enterprise-nav-actions">
+          <div className="enterprise-nav-user">
+            <span>{customerDisplayName}</span>
+            <strong>{roleLabel} CLIENT</strong>
           </div>
-          <button type="button" className="enterprise-btn enterprise-btn-secondary" onClick={handleLogout} style={{ padding: '0.6rem 1.5rem', fontSize: '0.95rem' }}>Logout</button>
+          <button type="button" className="enterprise-btn enterprise-btn-secondary" onClick={handleLogout}>Logout</button>
         </div>
       </header>
 
@@ -256,10 +251,20 @@ export function DashboardPage() {
 
                 <div style={{ gridColumn: '1 / -1', marginTop: '1rem' }}>
                   {isLoadingLoanApplication ? (
-                    <div className="bank-application-status bank-application-status-muted"><span>Application status</span><strong>Loading...</strong></div>
+                    <div className="bank-application-status bank-application-status-muted">
+                      <div className="bank-application-status-head">
+                        <span>Application status</span>
+                        <span className="bank-application-status-pill bank-application-status-pill-muted">Loading...</span>
+                      </div>
+                    </div>
                   ) : latestLoanApplication && (
                     <div className={`bank-application-status bank-application-status-${latestLoanApplication.status.toLowerCase()}`}>
-                      <div className="bank-application-status-head"><span>Loan application</span><strong>{formatLoanStatus(latestLoanApplication.status)}</strong></div>
+                      <div className="bank-application-status-head">
+                        <span>Loan application</span>
+                        <span className={`bank-application-status-pill bank-application-status-pill-${latestLoanApplication.status.toLowerCase()}`}>
+                          {formatLoanStatus(latestLoanApplication.status)}
+                        </span>
+                      </div>
                       <div className="bank-application-status-grid">
                         <div><span>Product</span><strong>{formatLoanType(latestLoanApplication.loanType)}</strong></div>
                         <div><span>Amount</span><strong>{formatMoney(latestLoanApplication.principalAmount)}</strong></div>
@@ -321,10 +326,10 @@ export function DashboardPage() {
 
       {isLoanApplicationOpen && (
         <div className="bank-modal-backdrop" role="presentation">
-          <section className="bank-loan-modal" role="dialog" aria-modal="true">
+          <section className="bank-loan-modal" role="dialog" aria-modal="true" aria-labelledby="loan-request-title">
             <div className="bank-panel-heading">
-              <div><p className="bank-section-kicker">Credit request</p><h2>Request a loan</h2></div>
-              <button type="button" className="bank-icon-button" onClick={() => setIsLoanApplicationOpen(false)}>x</button>
+              <div><p className="bank-section-kicker">Credit request</p><h2 id="loan-request-title">Request a loan</h2></div>
+              <button type="button" className="bank-icon-button" aria-label="Close loan request" onClick={() => setIsLoanApplicationOpen(false)}>x</button>
             </div>
             <form className="bank-loan-form" onSubmit={handleLoanApplicationSubmit} noValidate>
               <label className="form-field">
@@ -332,6 +337,7 @@ export function DashboardPage() {
                 <div className="custom-dropdown-container">
                   <div className="custom-dropdown-header" onClick={() => setIsDropdownOpen(!isDropdownOpen)}>
                     {selectedLoanProduct.label}
+                    <span className="custom-dropdown-chevron" aria-hidden="true">⌄</span>
                   </div>
                   {isDropdownOpen && (
                     <div className="custom-dropdown-list">
@@ -385,15 +391,29 @@ export function DashboardPage() {
                   <div><span>APR (ГПР)</span><strong>{loanCalculation.apr === null ? '-' : `${loanCalculation.apr.toFixed(2)}%`}</strong></div>
                 </div>
                 <dl className="bank-calculator-breakdown">
+                  <div><dt>Credit term</dt><dd>{loanCalculation.apr === null ? '-' : `${Number(loanApplicationDraft.repaymentTermMonths)} mo.`}</dd></div>
                   <div><dt>Total due amount</dt><dd>{formatOptionalMoney(loanCalculation.totalDueAmount)}</dd></div>
                   <div><dt>Total interest</dt><dd>{formatOptionalMoney(loanCalculation.totalInterest)}</dd></div>
+                  <div><dt>Interest rate</dt><dd>{estimatedAnnualInterestRate === null ? '-' : `${estimatedAnnualInterestRate.toFixed(2)}%`}</dd></div>
                   <div><dt>Monthly service fee</dt><dd>{formatMoney(selectedLoanProduct.monthlyServiceFee)}</dd></div>
+                  {selectedLoanProduct.upfrontFees.analysis > 0 && (
+                    <div><dt>Check and analysis fee</dt><dd>{formatMoney(selectedLoanProduct.upfrontFees.analysis)}</dd></div>
+                  )}
+                  {selectedLoanProduct.upfrontFees.collateralAssessment > 0 && (
+                    <div><dt>Collateral assessment fee</dt><dd>{formatMoney(selectedLoanProduct.upfrontFees.collateralAssessment)}</dd></div>
+                  )}
                 </dl>
               </div>
 
+              {(loanApplicationMessage || loanApplicationValidationMessage) && (
+                <p className="bank-form-message">{loanApplicationMessage || loanApplicationValidationMessage}</p>
+              )}
+
               <div className="bank-form-actions">
                 <button type="button" className="bank-ghost-button" onClick={() => setIsLoanApplicationOpen(false)}>Cancel</button>
-                <button type="submit" className="bank-primary-button" disabled={Boolean(loanApplicationValidationMessage) || isSubmittingLoanApplication}>Submit request</button>
+                <button type="submit" className="bank-primary-button" disabled={Boolean(loanApplicationValidationMessage) || hasPendingLoanApplication || isSubmittingLoanApplication}>
+                  {isSubmittingLoanApplication ? 'Submitting...' : 'Submit request'}
+                </button>
               </div>
             </form>
           </section>

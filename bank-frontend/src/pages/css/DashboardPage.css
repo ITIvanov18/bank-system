@@ -64,6 +64,12 @@
   border-color: rgba(255, 255, 255, 0.3);
 }
 
+.custom-dropdown-chevron {
+  color: #94a3b8;
+  font-size: 1.05rem;
+  line-height: 1;
+}
+
 .custom-dropdown-list {
   position: absolute;
   top: calc(100% + 4px);

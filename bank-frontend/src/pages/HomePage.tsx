@@ -12,15 +12,15 @@ export function HomePage() {
       </div>
 
       <header className="enterprise-nav">
-        <div style={{ display: 'flex', alignItems: 'center', gap: '3rem' }}>
-          <Link to="/" className="enterprise-logo-wrap" style={{ textDecoration: 'none' }}>
-            <img src="/bankai-logo.png" alt="BANKλI" style={{ width: '60px' }} />
+        <div className="enterprise-nav-left">
+          <div className="enterprise-logo-wrap">
+            <img className="enterprise-logo-image" src="/bankai-logo.png" alt="BANKΛI" />
             <div>
               <span className="enterprise-logo-text">BANKΛI</span>
               <span className="enterprise-logo-subtitle">Premium AI FinTech</span>
             </div>
-          </Link>
-          <nav style={{ display: 'flex', gap: '1rem' }}>
+          </div>
+          <nav className="enterprise-nav-links-visible">
             <a href="#security" className="custom-nav-pill custom-nav-pill-blue-light">Security</a>
             <Link to="/about" className="custom-nav-pill custom-nav-pill-blue-light">About Us</Link>
           </nav>

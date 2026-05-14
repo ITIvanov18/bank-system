@@ -717,10 +717,37 @@ body {
   -webkit-backdrop-filter: blur(12px);
 }
 
+.enterprise-nav-left,
+.enterprise-nav-actions,
+.enterprise-nav-links-visible {
+  display: flex;
+  align-items: center;
+}
+
+.enterprise-nav-left {
+  gap: 3rem;
+  min-width: 0;
+}
+
+.enterprise-nav-actions {
+  gap: 1.5rem;
+}
+
+.enterprise-nav-links-visible {
+  gap: 1rem;
+}
+
 .enterprise-logo-wrap {
   display: flex;
   align-items: center;
-  gap: 0.8rem;
+  gap: 0.9rem;
+  flex: 0 0 auto;
+}
+
+.enterprise-logo-image {
+  width: 72px;
+  height: 72px;
+  object-fit: contain;
 }
 
 .enterprise-logo-dot {
@@ -755,7 +782,7 @@ body {
 .enterprise-logo-text {
   display: block;
   color: #f8fafc;
-  font-size: 1.12rem;
+  font-size: 1.26rem;
   font-weight: 900;
   letter-spacing: 0;
   line-height: 1.05;
@@ -765,8 +792,44 @@ body {
   display: block;
   margin-top: 0.2rem;
   color: #9fb0c6;
-  font-size: 0.84rem;
+  font-size: 0.9rem;
   font-weight: 600;
+}
+
+.enterprise-nav .custom-nav-pill {
+  padding: 0.58rem 1.3rem;
+  font-size: 1rem;
+  line-height: 1.2;
+}
+
+.enterprise-nav .custom-nav-pill-active {
+  background-color: rgba(59, 130, 246, 0.2);
+}
+
+.enterprise-nav .enterprise-btn {
+  min-height: 42px;
+  font-size: 1rem;
+}
+
+.enterprise-nav-user {
+  display: grid;
+  gap: 0.14rem;
+  text-align: right;
+}
+
+.enterprise-nav-user span {
+  display: block;
+  color: #f8fafc;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.enterprise-nav-user strong {
+  display: block;
+  color: #60a5fa;
+  font-size: 0.78rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
 }
 
 .enterprise-nav-links {
@@ -1042,11 +1105,16 @@ body {
   }
 
   .enterprise-logo-text {
-    font-size: 0.88rem;
+    font-size: 1rem;
   }
 
   .enterprise-logo-subtitle {
-    font-size: 0.76rem;
+    font-size: 0.78rem;
+  }
+
+  .enterprise-logo-image {
+    width: 62px;
+    height: 62px;
   }
 
   .enterprise-logo-frame {
@@ -1080,6 +1148,15 @@ body {
     text-align: center;
     line-height: 1.25;
     padding: 0.75rem 0.9rem;
+  }
+
+  .enterprise-nav-left,
+  .enterprise-nav-actions {
+    gap: 0.85rem;
+  }
+
+  .enterprise-nav-links-visible {
+    display: none;
   }
 
   .enterprise-metrics,
@@ -1480,27 +1557,43 @@ body {
 
 .bank-application-status {
   display: grid;
-  gap: 0.8rem;
-  padding: 0.9rem;
-  margin-bottom: 1rem;
-  border: 1px solid rgba(96, 165, 250, 0.24);
+  gap: 0.9rem;
+  padding: 1rem;
+  margin-bottom: 0.25rem;
+  border: 1px solid rgba(196, 181, 253, 0.24);
   border-radius: 8px;
-  background: rgba(37, 99, 235, 0.11);
+  background:
+    linear-gradient(135deg, rgba(88, 28, 135, 0.2), rgba(15, 23, 42, 0.58)),
+    rgba(2, 6, 23, 0.28);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
 }
 
 .bank-application-status-pending {
-  border-color: rgba(245, 158, 11, 0.34);
-  background: rgba(245, 158, 11, 0.1);
+  border-color: rgba(196, 181, 253, 0.34);
+  background:
+    linear-gradient(135deg, rgba(109, 40, 217, 0.2), rgba(15, 23, 42, 0.58)),
+    rgba(2, 6, 23, 0.28);
 }
 
 .bank-application-status-rejected {
   border-color: rgba(248, 113, 113, 0.34);
-  background: rgba(127, 29, 29, 0.22);
+  background:
+    linear-gradient(135deg, rgba(127, 29, 29, 0.24), rgba(15, 23, 42, 0.52)),
+    rgba(2, 6, 23, 0.24);
 }
 
 .bank-application-status-active {
-  border-color: rgba(20, 184, 166, 0.34);
-  background: rgba(20, 184, 166, 0.11);
+  border-color: rgba(134, 239, 172, 0.28);
+  background:
+    linear-gradient(135deg, rgba(22, 101, 52, 0.14), rgba(15, 23, 42, 0.58)),
+    rgba(2, 6, 23, 0.28);
+}
+
+.bank-application-status-closed {
+  border-color: rgba(148, 163, 184, 0.24);
+  background:
+    linear-gradient(135deg, rgba(71, 85, 105, 0.18), rgba(15, 23, 42, 0.5)),
+    rgba(2, 6, 23, 0.24);
 }
 
 .bank-application-status-muted {
@@ -1517,6 +1610,7 @@ body {
 .bank-application-status-head {
   grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
+  column-gap: 1rem;
 }
 
 .bank-application-status-grid {
@@ -1530,6 +1624,50 @@ body {
 
 .bank-application-status span {
   font-size: 0.8rem;
+}
+
+.bank-application-status-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 32px;
+  padding: 0.38rem 0.72rem;
+  border-radius: 999px;
+  color: #ede9fe;
+  background: rgba(109, 40, 217, 0.18);
+  border: 1px solid rgba(196, 181, 253, 0.3);
+  font-size: 0.78rem;
+  font-weight: 900;
+  letter-spacing: 0;
+  line-height: 1;
+  text-transform: uppercase;
+  white-space: nowrap;
+  box-sizing: border-box;
+}
+
+.bank-application-status-pill-pending {
+  color: #ede9fe;
+  background: rgba(109, 40, 217, 0.2);
+  border-color: rgba(196, 181, 253, 0.34);
+}
+
+.bank-application-status-pill-active {
+  color: #ccfbf1;
+  background: rgba(20, 184, 166, 0.16);
+  border-color: rgba(94, 234, 212, 0.32);
+}
+
+.bank-application-status-pill-rejected {
+  color: #fecaca;
+  background: rgba(185, 28, 28, 0.18);
+  border-color: rgba(248, 113, 113, 0.3);
+}
+
+.bank-application-status-pill-closed,
+.bank-application-status-pill-muted {
+  color: #d7e2ee;
+  background: rgba(100, 116, 139, 0.16);
+  border-color: rgba(148, 163, 184, 0.24);
 }
 
 .bank-application-status strong {

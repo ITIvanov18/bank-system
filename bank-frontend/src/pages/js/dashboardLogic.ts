@@ -16,7 +16,7 @@ export const loanProductLimits = {
     minimumPrincipalAmount: 1_000,
     maximumPrincipalAmount: 40_000,
     principalStepAmount: 5,
-    minimumRepaymentTermMonths: 12,
+    minimumRepaymentTermMonths: 6,
     maximumRepaymentTermMonths: 120,
     monthlyServiceFee: 2.5,
     upfrontFees: {
@@ -32,7 +32,7 @@ export const loanProductLimits = {
     minimumPrincipalAmount: 3_000,
     maximumPrincipalAmount: 500_000,
     principalStepAmount: 500,
-    minimumRepaymentTermMonths: null,
+    minimumRepaymentTermMonths: 12,
     maximumRepaymentTermMonths: 360,
     monthlyServiceFee: 10,
     upfrontFees: {
@@ -101,9 +101,6 @@ export function formatAmountLimits(product: LoanProductLimits) {
 }
 
 export function formatTermLimits(product: LoanProductLimits) {
-  if (product.minimumRepaymentTermMonths === null) {
-    return `No product minimum, up to ${product.maximumRepaymentTermMonths} months`;
-  }
   return `${product.minimumRepaymentTermMonths} - ${product.maximumRepaymentTermMonths} months`;
 }
 

@@ -13,17 +13,17 @@ export function AboutUsPage() {
       </div>
 
       <header className="enterprise-nav">
-        <div style={{ display: 'flex', alignItems: 'center', gap: '3rem' }}>
-          <Link to="/" className="enterprise-logo-wrap" style={{ textDecoration: 'none' }}>
-            <img src="/bankai-logo.png" alt="BANKΛI" style={{ width: '60px' }} />
+        <div className="enterprise-nav-left">
+          <div className="enterprise-logo-wrap">
+            <img className="enterprise-logo-image" src="/bankai-logo.png" alt="BANKΛI" />
             <div>
               <span className="enterprise-logo-text">BANKΛI</span>
               <span className="enterprise-logo-subtitle">Premium AI FinTech</span>
             </div>
-          </Link>
-          <nav style={{ display: 'flex', gap: '1rem' }}>
+          </div>
+          <nav className="enterprise-nav-links-visible">
             <Link to="/" className="custom-nav-pill custom-nav-pill-blue-light">Home</Link>
-            <Link to="/about" className="custom-nav-pill custom-nav-pill-blue-light" style={{ backgroundColor: 'rgba(0, 123, 255, 0.2)' }}>About Us</Link>
+            <Link to="/about" className="custom-nav-pill custom-nav-pill-blue-light custom-nav-pill-active">About Us</Link>
           </nav>
         </div>
         <Link to="/login" className="enterprise-btn enterprise-btn-secondary">Sign in</Link>
