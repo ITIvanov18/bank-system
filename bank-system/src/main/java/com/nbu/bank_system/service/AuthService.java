@@ -26,6 +26,11 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+/**
+ * Service слой за authentication и password lifecycle use cases.
+ * Координира login, change password и password reset flows, като пази token hashing-а и email изпращането извън controller слоя.
+ */
+
 @Service
 public class AuthService {
 
@@ -108,6 +113,7 @@ public class AuthService {
     public void requestPasswordReset(PasswordResetRequest request) {
         String normalizedEmail = request.email().trim().toLowerCase();
         customerRepository.findByEmailIgnoreCase(normalizedEmail).ifPresent(customer -> {
+            // В базата пазим hash на reset token-а, така че изтекъл DB dump да не съдържа директно използваеми reset links.
             String token = generateResetToken();
             String tokenHash = hashToken(token);
 
@@ -144,6 +150,7 @@ public class AuthService {
 
     private String generateResetToken() {
         byte[] tokenBytes = new byte[PASSWORD_RESET_TOKEN_BYTES];
+        // SecureRandom генерира достатъчно entropy за еднократен URL-safe token без padding.
         secureRandom.nextBytes(tokenBytes);
         return Base64.getUrlEncoder().withoutPadding().encodeToString(tokenBytes);
     }

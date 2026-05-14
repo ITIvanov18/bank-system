@@ -15,6 +15,11 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+/**
+ * REST controller за authentication use cases.
+ * Експонира login, first-login password change и password reset операции, като делегира бизнес логиката към AuthService.
+ */
+
 @RestController
 @RequestMapping("/api/auth")
 public class AuthController {

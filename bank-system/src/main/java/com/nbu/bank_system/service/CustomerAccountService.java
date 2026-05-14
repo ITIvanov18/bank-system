@@ -14,6 +14,11 @@ import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+/**
+ * Service слой за customer bank account use cases.
+ * Отговаря за account status aggregation, еднократно откриване на сметка и генериране на валиден български IBAN.
+ */
+
 @Service
 public class CustomerAccountService {
 
@@ -115,6 +120,7 @@ public class CustomerAccountService {
         String accountNumber = String.format("%08d", sequence);
         String bban = BANK_CODE + BRANCH_CODE + ACCOUNT_TYPE + accountNumber;
 
+        // ISO 13616 check digits: местим country code-а накрая, заместваме буквите с числа и взимаме mod 97.
         String rearranged = bban + COUNTRY_CODE + "00";
         int mod97 = mod97(convertIbanLettersToNumbers(rearranged));
         int checkDigits = 98 - mod97;

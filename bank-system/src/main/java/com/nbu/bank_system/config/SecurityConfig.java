@@ -20,6 +20,11 @@ import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
+/**
+ * Централна Spring Security конфигурация за backend API-то.
+ * Дефинира stateless JWT authentication, публичните endpoints, role-based достъпа и CORS настройките за frontend приложението.
+ */
+
 @Configuration
 @EnableWebSecurity
 @EnableMethodSecurity

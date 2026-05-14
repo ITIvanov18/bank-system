@@ -14,6 +14,11 @@ import org.springframework.security.web.authentication.WebAuthenticationDetailsS
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
+/**
+ * Once-per-request filter, който превръща валиден Bearer JWT в Spring Security authentication.
+ * Невалидни или остарели tokens се игнорират безопасно чрез изчистване на SecurityContext-а и продължаване по filter chain-а.
+ */
+
 @Component
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
@@ -41,6 +46,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         }
 
         try {
+            // Bearer token-ът е единственият state за сесията, защото backend-ът е конфигуриран stateless.
             String jwt = authHeader.substring(BEARER_PREFIX.length());
             String userEmail = jwtService.extractUsername(jwt);
 
@@ -58,6 +64,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 }
             }
         } catch (JwtException | UsernameNotFoundException ignored) {
+            // При невалиден token не връщаме stack trace към клиента; оставяме request-а unauthenticated.
             SecurityContextHolder.clearContext();
         }
 

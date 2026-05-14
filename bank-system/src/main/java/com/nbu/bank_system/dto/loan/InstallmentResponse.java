@@ -5,6 +5,11 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
+/**
+ * Response DTO за една погасителна вноска.
+ * Дава на frontend-а падеж, разбивка principal/interest, оставащ баланс, статус и payment timestamp.
+ */
+
 public record InstallmentResponse(
         Long installmentId,
         Integer installmentNumber,

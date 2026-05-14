@@ -21,9 +21,8 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 /**
-   Представя единична месечна вноска от repayment schedule-а на заема
-   Съхранява разбивка на анюитетна вноска (principal/interest),
-   оставащ баланс, падежна дата и текущ payment status
+ * Представя единична месечна вноска от repayment schedule-а на заема.
+ * Съхранява разбивка на анюитетна вноска, оставащ баланс, падежна дата и payment status за клиентския погасителен план.
  */
 
 @Entity

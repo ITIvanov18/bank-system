@@ -8,6 +8,11 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+/**
+ * Spring Data repository за общия Customer aggregate root.
+ * Осигурява email-based lookup за authentication/onboarding и native update helpers за bootstrap employee сценария.
+ */
+
 public interface CustomerRepository extends JpaRepository<Customer, Long> {
 
     Optional<Customer> findByEmailIgnoreCase(String email);

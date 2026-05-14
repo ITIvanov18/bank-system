@@ -8,6 +8,11 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
+/**
+ * Глобален REST exception handler за backend API-то.
+ * Уеднаквява грешките към frontend-а чрез кратък message payload и подходящ HTTP статус за auth, validation и business failures.
+ */
+
 @RestControllerAdvice
 public class AuthExceptionHandler {
 

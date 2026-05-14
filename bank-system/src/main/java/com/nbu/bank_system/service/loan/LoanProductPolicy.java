@@ -8,10 +8,8 @@ import java.util.Map;
 import org.springframework.stereotype.Component;
 
 /**
- * Централизира бизнес правилата за кредитните продукти
- * Тук държим reference/base условията за consumer и mortgage кредити,
- * както и адаптивната лихва според сумата и срока
- * Така контролерът и service слоят не съдържат hard-coded финансови правила
+ * Централизира продуктовите правила за поддържаните кредитни продукти.
+ * Държи лимити за главница/срок, стъпки на сумата и indicative interest calculation според LoanType.
  */
 
 @Component

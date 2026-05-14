@@ -9,6 +9,11 @@ import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import java.time.LocalDateTime;
 
+/**
+ * Persistent model за еднократни password reset tokens.
+ * В базата се пази само SHA-256 hash на token-а, срок на валидност и used marker, за да не се съхранява директният reset линк.
+ */
+
 @Entity
 @Table(name = "password_reset_tokens")
 public class PasswordResetToken extends BaseEntity {

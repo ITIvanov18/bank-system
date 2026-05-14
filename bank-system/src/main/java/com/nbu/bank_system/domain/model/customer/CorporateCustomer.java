@@ -11,8 +11,8 @@ import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 
 /**
- * Customer subtype за юридически лица (компании)
- * Съдържа company identity (EIK) и данни за официалния ѝ representative
+ * Customer subtype за юридически лица.
+ * Съдържа company identity чрез EIK и данни за официалния representative, като наследява общите online banking credentials от Customer.
  */
 
 @Entity

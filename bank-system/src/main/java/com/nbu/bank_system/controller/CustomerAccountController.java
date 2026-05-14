@@ -12,6 +12,11 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+/**
+ * Customer-facing controller за банкови сметки.
+ * Работи само за CUSTOMER роля и използва authenticated principal email-а като граница между клиента и service слоя.
+ */
+
 @RestController
 @RequestMapping("/api/customer/accounts")
 @PreAuthorize("hasRole('CUSTOMER')")

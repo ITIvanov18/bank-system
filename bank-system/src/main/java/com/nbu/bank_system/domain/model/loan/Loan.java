@@ -30,9 +30,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
-   Представя loan, отпуснат към конкретен customer
-   Съдържа principal (главница), loan type, interest configuration,
-   repayment term и текущия loan lifecycle status.
+ * Представя loan или loan application, свързан с конкретен customer.
+ * Съдържа principal, loan type, interest configuration, repayment term и lifecycle status, а domain методите управляват approve/reject/close преходите.
  */
 
 @Getter

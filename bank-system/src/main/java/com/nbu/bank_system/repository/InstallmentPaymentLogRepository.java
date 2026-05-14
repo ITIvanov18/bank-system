@@ -7,6 +7,11 @@ import org.springframework.data.repository.query.Param;
 
 import java.util.List;
 
+/**
+ * Spring Data repository за repayment payment logs.
+ * Custom query-то връща payment history за конкретен customer в обратен хронологичен ред.
+ */
+
 public interface InstallmentPaymentLogRepository extends JpaRepository<InstallmentPaymentLog, Long> {
 
     @Query("SELECT l FROM InstallmentPaymentLog l JOIN l.loan ln WHERE ln.customer.id = :customerId ORDER BY l.paidAt DESC")

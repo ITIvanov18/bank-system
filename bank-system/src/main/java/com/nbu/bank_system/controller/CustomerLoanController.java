@@ -19,6 +19,11 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 
+/**
+ * Customer-facing controller за кредитни заявления, активни кредити и плащания.
+ * Пази REST contract-а отделен от loan service логиката и връща DTO-та, пригодени за клиентския dashboard.
+ */
+
 @RestController
 @RequestMapping("/api/customer/loans")
 @PreAuthorize("hasRole('CUSTOMER')")

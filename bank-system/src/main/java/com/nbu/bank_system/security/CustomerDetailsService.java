@@ -7,6 +7,11 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 
+/**
+ * UserDetailsService implementation за email-based authentication.
+ * Зарежда Customer от repository слоя и го адаптира до BankUserPrincipal за Spring Security.
+ */
+
 @Service
 public class CustomerDetailsService implements UserDetailsService {
 

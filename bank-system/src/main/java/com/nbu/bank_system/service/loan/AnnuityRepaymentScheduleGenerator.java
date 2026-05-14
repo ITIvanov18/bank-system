@@ -10,10 +10,8 @@ import java.util.List;
 import org.springframework.stereotype.Component;
 
 /**
- * Генерира анюитетен погасителен план за вече одобрен кредит.
- * Annuity означава, че месечната вноска е еднаква през целия срок,
- * но съотношението между лихва и главница се променя:
- * в началото лихвената част е по-голяма, а към края по-голяма става главницата
+ * Financial helper за генериране на анюитетен repayment schedule.
+ * Изчислява месечната вноска, principal/interest разбивката и remaining balance с контролирано BigDecimal закръгляне.
  */
 
 @Component

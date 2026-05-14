@@ -10,6 +10,11 @@ import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
+/**
+ * Spring Security principal adapter върху домейн Customer.
+ * Превежда customer id, email, password hash, role и first-login флага към UserDetails contract-а.
+ */
+
 public class BankUserPrincipal implements UserDetails {
 
     @Getter

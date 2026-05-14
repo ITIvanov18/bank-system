@@ -16,6 +16,11 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+/**
+ * Service слой за onboarding на индивидуални и корпоративни клиенти.
+ * Създава customer entity, генерира временна парола, записва hash и изпраща onboarding email в една бизнес транзакция.
+ */
+
 @Service
 public class CustomerOnboardingService {
 

@@ -13,6 +13,11 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 
+/**
+ * Service за създаване и валидиране на JWT tokens.
+ * Подписва tokens със secret от configuration и включва минимални claims за customer id, role и first-login state.
+ */
+
 @Service
 public class JwtService {
 

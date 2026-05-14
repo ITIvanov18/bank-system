@@ -18,6 +18,11 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+/**
+ * Employee-facing controller за обработка на кредити.
+ * Покрива директно отпускане, преглед на pending заявления, approve/reject flow и история на решенията.
+ */
+
 @RestController
 @RequestMapping("/api/employee/loans")
 @PreAuthorize("hasRole('EMPLOYEE')")

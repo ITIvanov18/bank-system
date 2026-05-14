@@ -8,6 +8,11 @@ import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
 import java.math.BigDecimal;
 
+/**
+ * Customer-facing request DTO за подаване на кредитно заявление.
+ * Controller validation-ът пази основния API contract, а LoanProductPolicy валидира продуктово-специфичните лимити.
+ */
+
 public record SubmitLoanApplicationRequest(
         @NotNull(message = "Loan type is required.")
         LoanType loanType,

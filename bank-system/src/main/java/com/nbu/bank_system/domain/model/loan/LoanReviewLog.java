@@ -18,6 +18,11 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import java.math.BigDecimal;
 
+/**
+ * Audit entity за employee решение върху кредитно заявление.
+ * Snapshot-ва ключовите параметри на кредита и участниците, за да остане историята стабилна дори при бъдещи промени в loan entity-то.
+ */
+
 @Entity
 @Table(name = "loan_review_logs")
 public class LoanReviewLog extends BaseEntity {

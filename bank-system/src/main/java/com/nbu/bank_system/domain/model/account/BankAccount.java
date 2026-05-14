@@ -24,8 +24,8 @@ import lombok.Setter;
 import java.math.BigDecimal;
 
 /**
-   Представя банкова сметка, притежавана от customer
-   Съдържа уникален IBAN, текущ баланс и operational account status
+ * Представя банкова сметка, притежавана от customer.
+ * Съдържа уникален IBAN, текущ баланс и operational account status, а domain методите пазят валидността на credit/debit операциите.
  */
 
 @Getter

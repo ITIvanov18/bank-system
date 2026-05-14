@@ -9,6 +9,11 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+/**
+ * Spring Data repository за Loan aggregate-а.
+ * Съдържа customer/status queries и агрегираща справка за непогасена главница по активни кредити.
+ */
+
 public interface LoanRepository extends JpaRepository<Loan, Long> {
 
     List<Loan> findByCustomerIdOrderByCreatedAtDesc(Long customerId);

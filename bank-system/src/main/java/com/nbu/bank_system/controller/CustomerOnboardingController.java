@@ -12,6 +12,11 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+/**
+ * Employee-facing controller за onboarding на индивидуални и корпоративни клиенти.
+ * Приема валидирани request DTO-та и връща резултат от създаването заедно с информация за изпратената временна парола.
+ */
+
 @RestController
 @RequestMapping("/api/employee/onboarding")
 public class CustomerOnboardingController {

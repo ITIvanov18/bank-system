@@ -6,6 +6,11 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
+/**
+ * Customer-facing DTO за последното кредитно заявление.
+ * Събира параметрите на продукта, review timestamps и message, за да може dashboard-ът да показва текущ статус без JPA entity детайли.
+ */
+
 public record CustomerLoanApplicationStatusResponse(
         LoanType loanType,
         BigDecimal principalAmount,

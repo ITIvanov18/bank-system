@@ -5,6 +5,11 @@ import com.nbu.bank_system.domain.enums.LoanType;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
+/**
+ * Response DTO за audit историята на кредитните решения.
+ * Излага snapshot данните от LoanReviewLog във формат, удобен за employee history таблицата.
+ */
+
 public record LoanReviewLogResponse(
         Long logId,
         Long loanId,

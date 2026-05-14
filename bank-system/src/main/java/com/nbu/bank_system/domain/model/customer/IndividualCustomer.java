@@ -11,8 +11,8 @@ import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 
 /**
- Customer subtype за физическите лица
- Съхранява техните имена и уникален personal identification number (ЕГН)
+ * Customer subtype за физически лица.
+ * Съхранява имена и уникален personal identification number (ЕГН), като наследява общите online banking credentials от Customer.
  */
 
 @Entity

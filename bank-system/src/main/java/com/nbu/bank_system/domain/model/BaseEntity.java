@@ -10,8 +10,8 @@ import jakarta.persistence.PreUpdate;
 import java.time.LocalDateTime;
 
 /**
-   Базов parent за всички persistent модели
-   Осигурява генериран primary key и автоматични timestamps за create/update
+ * Базов parent за всички persistent модели.
+ * Осигурява генериран primary key и автоматични created/updated timestamps чрез JPA lifecycle callbacks.
  */
 
 @MappedSuperclass

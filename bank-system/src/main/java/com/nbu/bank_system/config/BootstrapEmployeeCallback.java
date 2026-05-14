@@ -12,9 +12,8 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Component;
 
 /**
- * Flyway callback, който гарантира наличието на начален служител след миграциите
- * Използва се JDBC директно, защото callback-ът работи по време на Flyway lifecycle,
- * преди приложението да разчита спокойно на repository/service слоя
+ * Flyway callback, който гарантира наличието на начален служител след миграциите.
+ * Използва JDBC директно, защото callback-ът работи по време на Flyway lifecycle, преди repository/service слоят да е подходящ за seed логика.
  */
 
 @Component

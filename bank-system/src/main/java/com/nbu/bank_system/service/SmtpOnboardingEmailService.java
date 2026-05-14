@@ -5,6 +5,11 @@ import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.stereotype.Service;
 
+/**
+ * SMTP implementation на OnboardingEmailService.
+ * Сглобява кратки transactional emails за временна парола и password reset линк и ги изпраща чрез Spring JavaMailSender.
+ */
+
 @Service
 public class SmtpOnboardingEmailService implements OnboardingEmailService {
 

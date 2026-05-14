@@ -33,10 +33,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * Този клас координира use case-а: намира клиента, валидира кредитния продукт,
- * изчислява лихвата, генерира погасителния план и записва всичко транзакционно.
- * Реалните правила са делегирани към LoanProductPolicy и AnnuityRepaymentScheduleGenerator,
- * за да не се смесват persistence, validation и financial calculation логиките
+ * Service слой за loan lifecycle use cases.
+ * Координира customer заявления, employee review, директно отпускане, repayment и audit logging, като делегира продуктови правила и financial calculations.
  */
 
 @Service
@@ -213,6 +211,7 @@ public class LoanGrantingService {
         LocalDateTime payTime = LocalDateTime.now();
         nextInstallment.markPaid(payTime);
         
+        // Payment log-ът остава отделен от Installment status-а, за да имаме audit trail за всяко реално плащане.
         installmentPaymentLogRepository.save(new InstallmentPaymentLog(
                 loan,
                 nextInstallment,

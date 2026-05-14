@@ -8,6 +8,11 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
+/**
+ * Обобщен response DTO за loan operations.
+ * Комбинира loan параметрите, customer display информация и repayment schedule, използвано от employee и customer endpoints.
+ */
+
 public record LoanGrantResponse(
         Long loanId,
         Long customerId,

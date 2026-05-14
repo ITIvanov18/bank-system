@@ -5,6 +5,11 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 
+/**
+ * Request DTO за onboarding на корпоративен клиент.
+ * Валидациите описват публичния API contract за company identity, representative данни и email.
+ */
+
 public record CreateCorporateCustomerRequest(
         @NotBlank
         @Size(max = 200)

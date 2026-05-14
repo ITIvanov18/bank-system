@@ -6,6 +6,11 @@ import jakarta.persistence.*;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
+/**
+ * Audit entity за реално извършено плащане по погасителна вноска.
+ * Запазва връзката към loan/installment, платената сума и timestamp-а, така че клиентът и служителят да виждат история на repayment действията.
+ */
+
 @Entity
 @Table(name = "installment_payments_log")
 public class InstallmentPaymentLog extends BaseEntity {

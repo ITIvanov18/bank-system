@@ -24,8 +24,8 @@ import java.util.HashSet;
 import java.util.Set;
 
 /**
- Абстрактно root customer entity, което дефинира общите полета и поведение за всички типове клиенти
- Играе ролята на owner-side reference към свързаните bank accounts и loans
+ * Абстрактно root customer entity, което дефинира общите полета и поведение за всички типове клиенти.
+ * Играе ролята на owner-side reference към свързаните bank accounts и loans и държи credentials, first-login флага и security ролята.
  */
 
 @Entity

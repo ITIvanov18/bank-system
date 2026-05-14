@@ -17,6 +17,11 @@ import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+/**
+ * Защитен onboarding controller за административно създаване на клиенти чрез secret header.
+ * Използва се като bootstrap/демо вход към CustomerOnboardingService, когато няма интерактивен employee workflow.
+ */
+
 @RestController
 @RequestMapping("/api/admin/secret/onboarding")
 public class AdminOnboardingController {
@@ -71,6 +76,7 @@ public class AdminOnboardingController {
     }
 
     private boolean secureEquals(String left, String right) {
+        // MessageDigest.isEqual избягва обикновено String сравнение и намалява timing leak риска при secret checks.
         return MessageDigest.isEqual(
                 left.getBytes(StandardCharsets.UTF_8),
                 right.getBytes(StandardCharsets.UTF_8)
