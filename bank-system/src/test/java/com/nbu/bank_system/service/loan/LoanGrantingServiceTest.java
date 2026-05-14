@@ -20,6 +20,7 @@ import com.nbu.bank_system.dto.loan.LoanGrantResponse;
 import com.nbu.bank_system.dto.loan.SubmitLoanApplicationRequest;
 import com.nbu.bank_system.repository.BankAccountRepository;
 import com.nbu.bank_system.repository.CustomerRepository;
+import com.nbu.bank_system.repository.InstallmentPaymentLogRepository;
 import com.nbu.bank_system.repository.LoanRepository;
 import com.nbu.bank_system.repository.LoanReviewLogRepository;
 import java.math.BigDecimal;
@@ -27,18 +28,20 @@ import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
-
 class LoanGrantingServiceTest {
 
     private final CustomerRepository customerRepository = mock(CustomerRepository.class);
     private final BankAccountRepository bankAccountRepository = mock(BankAccountRepository.class);
     private final LoanRepository loanRepository = mock(LoanRepository.class);
     private final LoanReviewLogRepository loanReviewLogRepository = mock(LoanReviewLogRepository.class);
+    private final InstallmentPaymentLogRepository installmentPaymentLogRepository = mock(InstallmentPaymentLogRepository.class);
+
     private final LoanGrantingService loanGrantingService = new LoanGrantingService(
             customerRepository,
             bankAccountRepository,
             loanRepository,
             loanReviewLogRepository,
+            installmentPaymentLogRepository,
             new LoanProductPolicy(),
             new AnnuityRepaymentScheduleGenerator()
     );
@@ -60,7 +63,7 @@ class LoanGrantingServiceTest {
                 24
         ));
 
-       ArgumentCaptor<Loan> loanCaptor = ArgumentCaptor.forClass(Loan.class);
+        ArgumentCaptor<Loan> loanCaptor = ArgumentCaptor.forClass(Loan.class);
         verify(loanRepository).save(loanCaptor.capture());
         Loan savedLoan = loanCaptor.getValue();
 
@@ -112,13 +115,13 @@ class LoanGrantingServiceTest {
         when(loanRepository.existsByCustomerIdAndStatus(7L, LoanStatus.PENDING)).thenReturn(true);
 
         org.assertj.core.api.Assertions.assertThatThrownBy(() -> loanGrantingService.submitLoanApplication(
-                "client@bank.bg",
-                new SubmitLoanApplicationRequest(
-                        LoanType.CONSUMER,
-                        BigDecimal.valueOf(12_000),
-                        24
-                )
-        ))
+                        "client@bank.bg",
+                        new SubmitLoanApplicationRequest(
+                                LoanType.CONSUMER,
+                                BigDecimal.valueOf(12_000),
+                                24
+                        )
+                ))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("already have a loan application");
 

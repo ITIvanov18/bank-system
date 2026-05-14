@@ -1,8 +1,8 @@
 export const teamMembers = [
   {
-    name: 'Bank AI',
+    name: 'Friedrich Younes',
     role: 'CEO & Founder',
-    image: 'https://i.pravatar.cc/150?u=elena'
+    image: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTGTlsdXCCTU97PX7Pc9QRY-J5OB2X91DoXDQ&s'
   },
   {
     name: 'Plamen Kostov',
