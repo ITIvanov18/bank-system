@@ -3,6 +3,7 @@ package com.nbu.bank_system.dto.loan;
 import com.nbu.bank_system.domain.enums.InstallmentStatus;
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 public record InstallmentResponse(
         Long installmentId,
@@ -12,6 +13,7 @@ public record InstallmentResponse(
         BigDecimal principalPart,
         BigDecimal interestPart,
         BigDecimal remainingBalance,
-        InstallmentStatus status
+        InstallmentStatus status,
+        LocalDateTime paidAt
 ) {
 }

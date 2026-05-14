@@ -118,9 +118,12 @@ public class Loan extends BaseEntity {
         this.reviewedAt = reviewedAt;
     }
 
+    public void close() {
+        this.status = LoanStatus.CLOSED;
+    }
+
     public void addInstallment(Installment installment) {
         installment.setLoan(this);
         this.installments.add(installment);
     }
 }
-

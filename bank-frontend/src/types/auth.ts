@@ -107,6 +107,7 @@ export interface InstallmentResponse {
   interestPart: number;
   remainingBalance: number;
   status: 'PENDING' | 'PAID' | 'OVERDUE';
+  paidAt?: string | null;
 }
 
 export interface LoanApplicationResponse {
@@ -125,6 +126,15 @@ export interface LoanApplicationResponse {
   monthlyInstallmentAmount: number;
   repaymentSchedule: InstallmentResponse[];
   message: string;
+}
+
+export interface InstallmentPaymentLogResponse {
+  logId: number;
+  loanId: number;
+  installmentId: number;
+  installmentNumber: number;
+  amountPaid: number;
+  paidAt: string;
 }
 
 export interface CustomerLoanApplicationStatusResponse {
@@ -158,4 +168,3 @@ export interface LoanReviewHistoryItem {
   decisionNote: string | null;
   decidedAt: string;
 }
-

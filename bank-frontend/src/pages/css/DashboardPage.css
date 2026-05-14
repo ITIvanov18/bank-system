@@ -165,3 +165,83 @@
 .custom-spinner-btn:first-child {
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
+/* Repayment Schedule Styles */
+.bank-repayment-schedule-container {
+  margin-top: 1.5rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  padding-top: 1rem;
+}
+.bank-toggle-schedule-btn {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 6px;
+  color: #bfdbfe;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.4rem 0.75rem;
+  transition: all 0.2s ease-in-out;
+}
+.bank-toggle-schedule-btn:hover {
+  opacity: 1;
+  background: rgba(255, 255, 255, 0.1);
+  color: #ffffff;
+}
+.bank-toggle-icon {
+  font-size: 0.7rem;
+}
+.bank-repayment-schedule-table-wrapper {
+  margin-top: 1rem;
+  max-height: 250px;
+  overflow-y: auto;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.2);
+}
+.bank-repayment-schedule-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: right;
+  font-size: 0.8125rem;
+}
+.bank-repayment-schedule-table th,
+.bank-repayment-schedule-table td {
+  padding: 0.5rem 0.75rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+.bank-repayment-schedule-table th {
+  position: sticky;
+  top: 0;
+  background: #111827; /* Dark background to cover scroll */
+  color: #94a3b8;
+  font-weight: 500;
+  z-index: 1;
+}
+.bank-repayment-schedule-table th:first-child,
+.bank-repayment-schedule-table td:first-child {
+  text-align: left;
+}
+.bank-repayment-schedule-table tr:last-child td {
+  border-bottom: none;
+}
+.bank-repayment-schedule-table tbody tr:hover {
+  background: rgba(255, 255, 255, 0.03);
+}
+/* Custom scrollbar for webkit */
+.bank-repayment-schedule-table-wrapper::-webkit-scrollbar {
+  width: 6px;
+}
+.bank-repayment-schedule-table-wrapper::-webkit-scrollbar-track {
+  background: transparent;
+}
+.bank-repayment-schedule-table-wrapper::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 10px;
+}
+.bank-repayment-schedule-table-wrapper::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.3);
+}

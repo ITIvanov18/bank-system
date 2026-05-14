@@ -2,8 +2,8 @@ import { useEffect, useMemo, useState, type FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getCustomerAccountStatus, openCustomerAccount } from '../api/account';
 import { extractApiErrorMessage } from '../api/http';
-import { getLatestCustomerLoanApplication, submitLoanApplication } from '../api/loan';
-import type { AccountStatusResponse, CustomerLoanApplicationStatusResponse } from '../types/auth';
+import { getLatestCustomerLoanApplication, submitLoanApplication, getAllCustomerLoans, repayInstallment } from '../api/loan';
+import type { AccountStatusResponse, CustomerLoanApplicationStatusResponse, LoanApplicationResponse, InstallmentPaymentLogResponse } from '../types/auth';
 import { clearSession, getSession } from '../utils/authStorage';
 import {
   loanProductLimits,
@@ -52,8 +52,12 @@ export function DashboardPage() {
 
   const [loanApplicationMessage, setLoanApplicationMessage] = useState<string | null>(null);
   const [latestLoanApplication, setLatestLoanApplication] = useState<CustomerLoanApplicationStatusResponse | null>(null);
+  const [customerLoans, setCustomerLoans] = useState<LoanApplicationResponse[]>([]);
+  const [paymentLogs, setPaymentLogs] = useState<InstallmentPaymentLogResponse[]>([]);
+  const [expandedLoanId, setExpandedLoanId] = useState<number | null>(null);
   const [isLoadingLoanApplication, setIsLoadingLoanApplication] = useState(session?.role === 'CUSTOMER');
   const [isSubmittingLoanApplication, setIsSubmittingLoanApplication] = useState(false);
+  const [isRepayingMap, setIsRepayingMap] = useState<Record<number, boolean>>({});
 
   const isAccountPanelLoading = !hasLoadedStatus || isLoadingStatus;
   const hasActiveAccount = accountStatus?.hasAccount && accountStatus.status === 'ACTIVE';
@@ -84,12 +88,16 @@ export function DashboardPage() {
       setIsLoadingLoanApplication(true);
       setAccountError(null);
       try {
-        const [response, latestLoanApplicationResponse] = await Promise.all([
+        const [response, latestLoanApplicationResponse, allLoansResponse] = await Promise.all([
           getCustomerAccountStatus(),
           getLatestCustomerLoanApplication(),
+          import('../api/loan').then(m => m.getAllCustomerLoans()),
         ]);
         setAccountStatus(response);
         setLatestLoanApplication(latestLoanApplicationResponse);
+        setCustomerLoans(allLoansResponse);
+        const logs = await import('../api/loan').then(m => m.getCustomerPaymentLogs());
+        setPaymentLogs(logs);
       } catch (error) {
         setAccountError(extractApiErrorMessage(error, 'Failed to load account status.'));
       } finally {
@@ -100,6 +108,23 @@ export function DashboardPage() {
     }
     void loadAccountStatus();
   }, [session?.customerId, session?.role]);
+
+  async function handleRepay(loanId: number) {
+    setIsRepayingMap(prev => ({ ...prev, [loanId]: true }));
+    setAccountError(null);
+    try {
+      const updatedLoan = await import('../api/loan').then(m => m.repayInstallment(loanId));
+      setCustomerLoans(currentLoans => currentLoans.map(l => l.loanId === loanId ? updatedLoan : l));
+      const newStatus = await getCustomerAccountStatus();
+      setAccountStatus(newStatus);
+      const newLogs = await import('../api/loan').then(m => m.getCustomerPaymentLogs());
+      setPaymentLogs(newLogs);
+    } catch (err) {
+      setAccountError(extractApiErrorMessage(err, 'Could not process repayment at this time.'));
+    } finally {
+      setIsRepayingMap(prev => ({ ...prev, [loanId]: false }));
+    }
+  }
 
   function handleLogout() {
     clearSession();
@@ -171,6 +196,8 @@ export function DashboardPage() {
         repaymentTermMonths: Number(loanApplicationDraft.repaymentTermMonths),
       });
       setLatestLoanApplication(response);
+      const allLoansResponse = await getAllCustomerLoans();
+      setCustomerLoans(allLoansResponse);
       setIsLoanApplicationOpen(false);
       setLoanApplicationMessage('Your loan application was submitted for employee review.');
     } catch (submitError) {
@@ -179,6 +206,34 @@ export function DashboardPage() {
       setIsSubmittingLoanApplication(false);
     }
   }
+
+  const hasAnyLoansVisually = customerLoans.length > 0;
+
+  const paymentLogsPanel = (
+    <article className="bank-panel bank-logs-panel">
+      <div className="bank-panel-heading">
+        <div>
+          <p className="bank-section-kicker">Account Logs</p>
+          <h2>Payment History</h2>
+        </div>
+      </div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', maxHeight: '400px', overflowY: 'auto', paddingRight: '0.5rem' }}>
+        {paymentLogs.length === 0 ? (
+          <p className="bank-panel-copy">No payments fully processed yet.</p>
+        ) : (
+          paymentLogs.map(log => (
+            <div key={log.logId} style={{ display: 'grid', gap: '0.25rem', padding: '0.85rem', background: 'rgba(2, 6, 23, 0.34)', border: '1px solid rgba(148, 163, 184, 0.18)', borderRadius: '8px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ color: '#9fb0c6', fontSize: '0.85rem' }}>Loan #{log.loanId} · Inst #{log.installmentNumber}</span>
+                <span style={{ color: '#4ade80', fontWeight: 'bold' }}>+{formatMoney(log.amountPaid)}</span>
+              </div>
+              <span style={{ color: '#9fb0c6', fontSize: '0.8rem' }}>{formatDateTime(log.paidAt)}</span>
+            </div>
+          ))
+        )}
+      </div>
+    </article>
+  );
 
   return (
     <div className="bank-dashboard-shell">
@@ -212,81 +267,162 @@ export function DashboardPage() {
         </section>
 
         <section className="bank-content-grid">
-          <article className={`bank-panel bank-account-panel ${isAccountPanelLoading ? 'account-status-panel-loading' : ''}`.trim()}>
-            <div className="bank-panel-heading">
-              <div>
-                <p className="bank-section-kicker">Primary account</p>
-                <h2>Current account</h2>
+          <div style={{ display: 'grid', gap: '1rem', alignContent: 'start' }}>
+            <article className={`bank-panel bank-account-panel ${isAccountPanelLoading ? 'account-status-panel-loading' : ''}`.trim()}>
+              <div className="bank-panel-heading">
+                <div>
+                  <p className="bank-section-kicker">Primary account</p>
+                  <h2>Current account</h2>
+                </div>
               </div>
-            </div>
 
-            {isAccountPanelLoading ? (
-              <div className="account-status-skeleton">
-                <div className="skeleton-line skeleton-line-short"></div>
-                <div className="skeleton-line"></div>
-                <div className="skeleton-line skeleton-line-medium"></div>
-              </div>
-            ) : accountStatus?.hasAccount ? (
-              <div className="bank-account-overview" style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: '2rem', alignItems: 'stretch' }}>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', alignItems: 'stretch' }}>
-                  <div className="account-balances-stack">
-                  <div className="bank-account-balance-card">
-                    <span>Available balance</span>
-                    <strong>{formatMoney(animatedBalance)}</strong>
-                    <small>{formatCustomerReference(session?.customerId)}</small>
-                  </div>
-                  <div className={`bank-account-debt-card ${(accountStatus.outstandingDebtAmount ?? 0) > 0 ? 'bank-account-debt-card-active' : ''}`}>
-                    <span>Outstanding debt</span>
-                    <strong>{formatDebt(animatedOutstandingDebt)}</strong>
-                    <small>Active loan principal</small>
-                  </div>
+              {isAccountPanelLoading ? (
+                <div className="account-status-skeleton">
+                  <div className="skeleton-line skeleton-line-short"></div>
+                  <div className="skeleton-line"></div>
+                  <div className="skeleton-line skeleton-line-medium"></div>
                 </div>
-                </div>
-
-                <div className="bank-account-meta-grid">
-                  <div><span>IBAN</span><strong>{accountStatus.iban}</strong></div>
-                  <div><span>Currency</span><strong>EUR</strong></div>
-                  <div><span>Account package</span><strong>Standard digital</strong></div>
-                </div>
-
-                <div style={{ gridColumn: '1 / -1', marginTop: '1rem' }}>
-                  {isLoadingLoanApplication ? (
-                    <div className="bank-application-status bank-application-status-muted">
-                      <div className="bank-application-status-head">
-                        <span>Application status</span>
-                        <span className="bank-application-status-pill bank-application-status-pill-muted">Loading...</span>
-                      </div>
+              ) : accountStatus?.hasAccount ? (
+                <div className="bank-account-overview" style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: '2rem', alignItems: 'stretch' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', alignItems: 'stretch' }}>
+                    <div className="account-balances-stack">
+                    <div className="bank-account-balance-card">
+                      <span>Available balance</span>
+                      <strong>{formatMoney(animatedBalance)}</strong>
+                      <small>{formatCustomerReference(session?.customerId)}</small>
                     </div>
-                  ) : latestLoanApplication && (
-                    <div className={`bank-application-status bank-application-status-${latestLoanApplication.status.toLowerCase()}`}>
-                      <div className="bank-application-status-head">
-                        <span>Loan application</span>
-                        <span className={`bank-application-status-pill bank-application-status-pill-${latestLoanApplication.status.toLowerCase()}`}>
-                          {formatLoanStatus(latestLoanApplication.status)}
-                        </span>
-                      </div>
-                      <div className="bank-application-status-grid">
-                        <div><span>Product</span><strong>{formatLoanType(latestLoanApplication.loanType)}</strong></div>
-                        <div><span>Amount</span><strong>{formatMoney(latestLoanApplication.principalAmount)}</strong></div>
-                        <div><span>Submitted</span><strong>{formatDateTime(latestLoanApplication.submittedAt)}</strong></div>
-                        <div><span>Indicative rate</span><strong>{latestLoanApplication.annualInterestRate.toFixed(2)}%</strong></div>
-                      </div>
-                      <p>{latestLoanApplication.message}</p>
+                    <div className={`bank-account-debt-card ${(accountStatus.outstandingDebtAmount ?? 0) > 0 ? 'bank-account-debt-card-active' : ''}`}>
+                      <span>Outstanding debt</span>
+                      <strong>{formatDebt(animatedOutstandingDebt)}</strong>
+                      <small>Active loan principal</small>
                     </div>
-                  )}
+                  </div>
+                  </div>
+
+                  <div className="bank-account-meta-grid">
+                    <div><span>IBAN</span><strong>{accountStatus.iban}</strong></div>
+                    <div><span>Currency</span><strong>EUR</strong></div>
+                    <div><span>Account package</span><strong>Standard digital</strong></div>
+                  </div>
+
+                  <div style={{ gridColumn: '1 / -1', marginTop: '1rem' }}>
+                    {isLoadingLoanApplication ? (
+                      <div className="bank-application-status bank-application-status-muted">
+                        <div className="bank-application-status-head">
+                          <span>Application status</span>
+                          <span className="bank-application-status-pill bank-application-status-pill-muted">Loading...</span>
+                        </div>
+                      </div>
+                    ) : latestLoanApplication && latestLoanApplication.status === 'PENDING' && (
+                      <div className={`bank-application-status bank-application-status-${latestLoanApplication.status.toLowerCase()}`}>
+                        <div className="bank-application-status-head">
+                          <span>Latest loan application</span>
+                          <span className={`bank-application-status-pill bank-application-status-pill-${latestLoanApplication.status.toLowerCase()}`}>
+                            {formatLoanStatus(latestLoanApplication.status)}
+                          </span>
+                        </div>
+                        <div className="bank-application-status-grid">
+                          <div><span>Product</span><strong>{formatLoanType(latestLoanApplication.loanType)}</strong></div>
+                          <div><span>Amount</span><strong>{formatMoney(latestLoanApplication.principalAmount)}</strong></div>
+                          <div><span>Submitted</span><strong>{formatDateTime(latestLoanApplication.submittedAt)}</strong></div>
+                          <div><span>Indicative rate</span><strong>{latestLoanApplication.annualInterestRate.toFixed(2)}%</strong></div>
+                        </div>
+                        <p>{latestLoanApplication.message}</p>
+                      </div>
+                    )}
+
+                    {customerLoans.filter(l => l.status === 'ACTIVE' || l.status === 'CLOSED').map(loan => (
+                      <div key={loan.loanId} className={`bank-application-status bank-application-status-${loan.status.toLowerCase()}`} style={{ marginTop: '1rem' }}>
+                        <div className="bank-application-status-head">
+                          <span>{formatLoanType(loan.loanType)}</span>
+                          <span className={`bank-application-status-pill bank-application-status-pill-${loan.status.toLowerCase()}`}>
+                            {loan.status}
+                          </span>
+                        </div>
+                        <div className="bank-application-status-grid">
+                          <div><span>Amount</span><strong>{formatMoney(loan.principalAmount)}</strong></div>
+                          <div><span>Monthly installment</span><strong>{formatMoney(loan.monthlyInstallmentAmount)}</strong></div>
+                          <div><span>Term</span><strong>{loan.repaymentTermMonths} months</strong></div>
+                          <div><span>Interest rate</span><strong>{loan.annualInterestRate.toFixed(2)}%</strong></div>
+                        </div>
+                        
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '1rem', flexWrap: 'wrap', gap: '1rem' }}>
+                          {loan.repaymentSchedule && loan.repaymentSchedule.length > 0 && (
+                            <div className="bank-repayment-schedule-container" style={{ marginTop: 0, paddingTop: 0, border: 'none' }}>
+                              <button type="button" className="bank-toggle-schedule-btn" onClick={() => setExpandedLoanId(expandedLoanId === loan.loanId ? null : loan.loanId)}>
+                                {expandedLoanId === loan.loanId ? 'Hide Repayment Schedule' : 'View Repayment Schedule'}
+                                <span className="bank-toggle-icon" aria-hidden="true">{expandedLoanId === loan.loanId ? '▲' : '▼'}</span>
+                              </button>
+                            </div>
+                          )}
+                          
+                          {loan.status === 'ACTIVE' && (() => {
+                            const lastPaidInstallment = loan.repaymentSchedule.slice().reverse().find(i => i.status === 'PAID');
+                            const hasPaidThisMonth = lastPaidInstallment && lastPaidInstallment.paidAt && 
+                              new Date(lastPaidInstallment.paidAt).getMonth() === new Date().getMonth() && 
+                              new Date(lastPaidInstallment.paidAt).getFullYear() === new Date().getFullYear();
+                            const isFullyPaid = loan.repaymentSchedule.every(i => i.status === 'PAID');
+                            return (
+                              <button 
+                                type="button" 
+                                className="bank-primary-button" 
+                                style={{ minHeight: '36px', padding: '0.4rem 1.2rem', fontSize: '0.85rem', marginLeft: 'auto' }}
+                                onClick={() => handleRepay(loan.loanId)}
+                                disabled={isRepayingMap[loan.loanId] || isFullyPaid || Boolean(hasPaidThisMonth)}
+                                title={hasPaidThisMonth ? "You have already paid an installment this calendar month" : "Pay next installment"}
+                              >
+                                {isRepayingMap[loan.loanId] ? 'Processing...' : 'Repay'}
+                              </button>
+                            );
+                          })()}
+                        </div>
+
+                        {expandedLoanId === loan.loanId && loan.repaymentSchedule && loan.repaymentSchedule.length > 0 && (
+                          <div className="bank-repayment-schedule-table-wrapper" style={{ marginTop: '0.5rem' }}>
+                            <table className="bank-repayment-schedule-table">
+                              <thead>
+                                <tr>
+                                  <th>Month</th>
+                                  <th>Status</th>
+                                  <th>Installment</th>
+                                  <th>Principal</th>
+                                  <th>Interest</th>
+                                  <th>Remaining</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {loan.repaymentSchedule.map((row) => (
+                                  <tr key={row.installmentId} style={{ opacity: row.status === 'PAID' ? 0.6 : 1, background: row.status === 'PAID' ? 'rgba(34, 197, 94, 0.05)' : '' }}>
+                                    <td>{row.installmentNumber}</td>
+                                    <td style={{ color: row.status === 'PAID' ? '#4ade80' : 'inherit' }}>{row.status}</td>
+                                    <td>{formatMoney(row.monthlyInstallmentAmount)}</td>
+                                    <td>{formatMoney(row.principalPart)}</td>
+                                    <td>{formatMoney(row.interestPart)}</td>
+                                    <td>{formatMoney(row.remainingBalance)}</td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
                 </div>
-              </div>
-            ) : (
-              <div className="bank-empty-state">
-                <p>You do not have an opened bank account yet.</p>
-                <button type="button" className="bank-primary-button" onClick={handleOpenAccount} disabled={isOpeningAccount}>
-                  {isOpeningAccount ? 'Opening account...' : 'Open bank account'}
-                </button>
-              </div>
-            )}
-            {accountSuccess && <p className="status-success-text">{accountSuccess}</p>}
-            {accountError && <p className="status-error-text">{accountError}</p>}
-          </article>
+              ) : (
+                <div className="bank-empty-state">
+                  <p>You do not have an opened bank account yet.</p>
+                  <button type="button" className="bank-primary-button" onClick={handleOpenAccount} disabled={isOpeningAccount}>
+                    {isOpeningAccount ? 'Opening account...' : 'Open bank account'}
+                  </button>
+                </div>
+              )}
+              {accountSuccess && <p className="status-success-text">{accountSuccess}</p>}
+              {accountError && <p className="status-error-text">{accountError}</p>}
+            </article>
+            
+            {!hasAnyLoansVisually && paymentLogsPanel}
+          </div>
 
           <aside className="bank-side-stack">
             <article className="bank-panel bank-profile-panel">
@@ -320,6 +456,9 @@ export function DashboardPage() {
               {!hasActiveAccount && !isAccountPanelLoading && <p className="bank-panel-note">Open an account before submitting a credit request.</p>}
               {hasPendingLoanApplication && <p className="bank-panel-note">Wait for employee review before submitting another request.</p>}
             </article>
+
+            {hasAnyLoansVisually && paymentLogsPanel}
+
           </aside>
         </section>
       </main>

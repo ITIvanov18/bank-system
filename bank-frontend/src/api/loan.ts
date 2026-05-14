@@ -5,6 +5,7 @@ import type {
   LoanApplicationResponse,
   LoanReviewHistoryItem,
   LoanReviewRequest,
+  InstallmentPaymentLogResponse,
 } from '../types/auth';
 
 export async function submitLoanApplication(
@@ -20,6 +21,21 @@ export async function getLatestCustomerLoanApplication(): Promise<CustomerLoanAp
     { validateStatus: (status) => status === 200 || status === 204 },
   );
   return response.status === 204 ? null : response.data as CustomerLoanApplicationStatusResponse;
+}
+
+export async function getAllCustomerLoans(): Promise<LoanApplicationResponse[]> {
+  const response = await httpClient.get<LoanApplicationResponse[]>('/api/customer/loans');
+  return response.data;
+}
+
+export async function getCustomerPaymentLogs(): Promise<InstallmentPaymentLogResponse[]> {
+  const response = await httpClient.get<InstallmentPaymentLogResponse[]>('/api/customer/loans/logs');
+  return response.data;
+}
+
+export async function repayInstallment(loanId: number): Promise<LoanApplicationResponse> {
+  const response = await httpClient.post<LoanApplicationResponse>(`/api/customer/loans/${loanId}/repay`);
+  return response.data;
 }
 
 export async function getPendingLoanApplications(): Promise<LoanApplicationResponse[]> {

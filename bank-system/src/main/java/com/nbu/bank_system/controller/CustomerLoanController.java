@@ -1,6 +1,8 @@
 package com.nbu.bank_system.controller;
 
 import com.nbu.bank_system.dto.loan.CustomerLoanApplicationStatusResponse;
+import com.nbu.bank_system.dto.loan.LoanGrantResponse;
+import com.nbu.bank_system.dto.loan.InstallmentPaymentLogResponse;
 import com.nbu.bank_system.dto.loan.SubmitLoanApplicationRequest;
 import com.nbu.bank_system.service.loan.LoanGrantingService;
 import jakarta.validation.Valid;
@@ -9,10 +11,13 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/customer/loans")
@@ -42,5 +47,23 @@ public class CustomerLoanController {
         return loanGrantingService.getLatestCustomerLoanApplication(authentication.getName())
                 .map(ResponseEntity::ok)
                 .orElseGet(() -> ResponseEntity.status(HttpStatus.NO_CONTENT).build());
+    }
+
+    @GetMapping("")
+    public ResponseEntity<List<LoanGrantResponse>> getAllCustomerLoans(Authentication authentication) {
+        return ResponseEntity.ok(loanGrantingService.getAllCustomerLoans(authentication.getName()));
+    }
+
+    @GetMapping("/logs")
+    public ResponseEntity<List<InstallmentPaymentLogResponse>> getCustomerPaymentLogs(Authentication authentication) {
+        return ResponseEntity.ok(loanGrantingService.getCustomerPaymentLogs(authentication.getName()));
+    }
+
+    @PostMapping("/{loanId}/repay")
+    public ResponseEntity<com.nbu.bank_system.dto.loan.LoanGrantResponse> repayInstallment(
+            Authentication authentication,
+            @PathVariable Long loanId
+    ) {
+        return ResponseEntity.ok(loanGrantingService.repayInstallment(loanId, authentication.getName()));
     }
 }

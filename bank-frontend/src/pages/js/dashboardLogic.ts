@@ -222,7 +222,7 @@ export function calculateFullLoanDetails(
     !Number.isFinite(repaymentTermMonths) ||
     repaymentTermMonths <= 0
   ) {
-    return { monthlyPayment: null, monthlyPaymentWithFee: null, totalInterest: null, totalDueAmount: null, apr: null };
+    return { monthlyPayment: null, monthlyPaymentWithFee: null, totalInterest: null, totalDueAmount: null, apr: null, repaymentSchedule: [] };
   }
 
   const monthlyPayment = calculateMonthlyPayment(principalAmount, estimatedAnnualInterestRate, repaymentTermMonths);
@@ -232,5 +232,29 @@ export function calculateFullLoanDetails(
   const totalDueAmount = monthlyPaymentWithFee * repaymentTermMonths + upfrontFees;
   const apr = calculateApr(principalAmount, monthlyPaymentWithFee, repaymentTermMonths, upfrontFees);
 
-  return { monthlyPayment, monthlyPaymentWithFee, totalInterest, totalDueAmount, apr };
+  const monthlyInterestRate = estimatedAnnualInterestRate / 100 / monthsInYear;
+  const repaymentSchedule = [];
+  let remainingPrincipal = principalAmount;
+
+  for (let month = 1; month <= repaymentTermMonths; month++) {
+    const interestPayment = remainingPrincipal * monthlyInterestRate;
+    let principalPayment = monthlyPayment - interestPayment;
+    
+    if (month === repaymentTermMonths) {
+      principalPayment = remainingPrincipal;
+    }
+    
+    remainingPrincipal -= principalPayment;
+    if (remainingPrincipal < 0) remainingPrincipal = 0;
+
+    repaymentSchedule.push({
+      month,
+      installmentAmount: monthlyPayment,
+      principalPayment,
+      interestPayment,
+      remainingPrincipal,
+    });
+  }
+
+  return { monthlyPayment, monthlyPaymentWithFee, totalInterest, totalDueAmount, apr, repaymentSchedule };
 }

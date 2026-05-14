@@ -6,6 +6,7 @@ import com.nbu.bank_system.domain.model.customer.IndividualCustomer;
 import com.nbu.bank_system.domain.model.loan.Installment;
 import com.nbu.bank_system.domain.model.loan.Loan;
 import com.nbu.bank_system.domain.model.loan.LoanReviewLog;
+import com.nbu.bank_system.domain.model.loan.InstallmentPaymentLog;
 import com.nbu.bank_system.domain.model.account.BankAccount;
 import com.nbu.bank_system.domain.enums.AccountStatus;
 import com.nbu.bank_system.domain.enums.LoanStatus;
@@ -15,11 +16,13 @@ import com.nbu.bank_system.dto.loan.GrantLoanRequest;
 import com.nbu.bank_system.dto.loan.InstallmentResponse;
 import com.nbu.bank_system.dto.loan.LoanGrantResponse;
 import com.nbu.bank_system.dto.loan.LoanReviewLogResponse;
+import com.nbu.bank_system.dto.loan.InstallmentPaymentLogResponse;
 import com.nbu.bank_system.dto.loan.SubmitLoanApplicationRequest;
 import com.nbu.bank_system.repository.BankAccountRepository;
 import com.nbu.bank_system.repository.CustomerRepository;
 import com.nbu.bank_system.repository.LoanRepository;
 import com.nbu.bank_system.repository.LoanReviewLogRepository;
+import com.nbu.bank_system.repository.InstallmentPaymentLogRepository;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -43,6 +46,7 @@ public class LoanGrantingService {
     private final BankAccountRepository bankAccountRepository;
     private final LoanRepository loanRepository;
     private final LoanReviewLogRepository loanReviewLogRepository;
+    private final InstallmentPaymentLogRepository installmentPaymentLogRepository;
     private final LoanProductPolicy loanProductPolicy;
     private final AnnuityRepaymentScheduleGenerator repaymentScheduleGenerator;
 
@@ -51,6 +55,7 @@ public class LoanGrantingService {
             BankAccountRepository bankAccountRepository,
             LoanRepository loanRepository,
             LoanReviewLogRepository loanReviewLogRepository,
+            InstallmentPaymentLogRepository installmentPaymentLogRepository,
             LoanProductPolicy loanProductPolicy,
             AnnuityRepaymentScheduleGenerator repaymentScheduleGenerator
     ) {
@@ -58,6 +63,7 @@ public class LoanGrantingService {
         this.bankAccountRepository = bankAccountRepository;
         this.loanRepository = loanRepository;
         this.loanReviewLogRepository = loanReviewLogRepository;
+        this.installmentPaymentLogRepository = installmentPaymentLogRepository;
         this.loanProductPolicy = loanProductPolicy;
         this.repaymentScheduleGenerator = repaymentScheduleGenerator;
     }
@@ -157,6 +163,70 @@ public class LoanGrantingService {
         return loanRepository.findByStatusOrderByCreatedAtAsc(LoanStatus.PENDING).stream()
                 .map(loan -> toLoanGrantResponse(loan, "Loan application is waiting for employee review."))
                 .toList();
+    }
+
+    public List<LoanGrantResponse> getAllCustomerLoans(String customerEmail) {
+        Customer customer = customerRepository.findByEmailIgnoreCase(customerEmail)
+                .orElseThrow(() -> new IllegalArgumentException("Customer not found"));
+        return loanRepository.findByCustomerIdOrderByCreatedAtDesc(customer.getId()).stream()
+                .map(loan -> toLoanGrantResponse(loan, "Loaded from records."))
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public List<InstallmentPaymentLogResponse> getCustomerPaymentLogs(String customerEmail) {
+        Customer customer = customerRepository.findByEmailIgnoreCase(customerEmail)
+                .orElseThrow(() -> new IllegalArgumentException("Customer not found"));
+        return installmentPaymentLogRepository.findAllByCustomerIdOrderByPaidAtDesc(customer.getId()).stream()
+                .map(log -> new InstallmentPaymentLogResponse(
+                        log.getId(),
+                        log.getLoan().getId(),
+                        log.getInstallment().getId(),
+                        log.getInstallment().getInstallmentNumber(),
+                        log.getAmountPaid(),
+                        log.getPaidAt()
+                ))
+                .toList();
+    }
+
+    @Transactional
+    public LoanGrantResponse repayInstallment(Long loanId, String customerEmail) {
+        Loan loan = loanRepository.findById(loanId)
+                .orElseThrow(() -> new IllegalArgumentException("Loan not found"));
+
+        if (!loan.getCustomer().getEmail().equalsIgnoreCase(customerEmail)) {
+            throw new IllegalArgumentException("You don't own this loan.");
+        }
+
+        if (loan.getStatus() != LoanStatus.ACTIVE) {
+            throw new IllegalStateException("Only active loans can be repaid.");
+        }
+
+        Installment nextInstallment = loan.getInstallments().stream()
+                .filter(i -> i.getStatus() == com.nbu.bank_system.domain.enums.InstallmentStatus.PENDING)
+                .min(Comparator.comparing(Installment::getInstallmentNumber))
+                .orElseThrow(() -> new IllegalStateException("No pending installments left."));
+
+        BankAccount activeAccount = getActiveAccount(loan.getCustomer().getId());
+        activeAccount.debit(nextInstallment.getMonthlyInstallmentAmount());
+        
+        LocalDateTime payTime = LocalDateTime.now();
+        nextInstallment.markPaid(payTime);
+        
+        installmentPaymentLogRepository.save(new InstallmentPaymentLog(
+                loan,
+                nextInstallment,
+                nextInstallment.getMonthlyInstallmentAmount(),
+                payTime
+        ));
+        
+        boolean allPaid = loan.getInstallments().stream().allMatch(i -> i.getStatus() == com.nbu.bank_system.domain.enums.InstallmentStatus.PAID);
+        if (allPaid) {
+            loan.close();
+        }
+
+        Loan savedLoan = loanRepository.save(loan);
+        return toLoanGrantResponse(savedLoan, "Installment paid successfully.");
     }
 
     @Transactional
@@ -305,7 +375,8 @@ public class LoanGrantingService {
                 installment.getPrincipalPart(),
                 installment.getInterestPart(),
                 installment.getRemainingBalance(),
-                installment.getStatus()
+                installment.getStatus(),
+                installment.getPaidAt()
         );
     }
 

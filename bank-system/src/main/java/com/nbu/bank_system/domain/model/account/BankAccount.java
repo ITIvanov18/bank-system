@@ -85,5 +85,14 @@ public class BankAccount extends BaseEntity {
         this.balance = this.balance.add(amount);
     }
 
-}
+    public void debit(BigDecimal amount) {
+        if (amount == null || amount.signum() <= 0) {
+            throw new IllegalArgumentException("Debit amount must be positive.");
+        }
+        if (this.balance.compareTo(amount) < 0) {
+            throw new IllegalStateException("Insufficient balance.");
+        }
+        this.balance = this.balance.subtract(amount);
+    }
 
+}
