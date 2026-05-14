@@ -1,10 +1,12 @@
+<div align="center">
+
 # BANKAI Bank System 🏦
 
 ![Java](https://img.shields.io/badge/JAVA-21-ef8b00?style=for-the-badge&logo=openjdk&logoColor=white)
 ![Spring Boot](https://img.shields.io/badge/SPRING%20BOOT-4.0.5-6DB33F?style=for-the-badge&logo=springboot&logoColor=white)
 ![React](https://img.shields.io/badge/REACT-19-149eca?style=for-the-badge&logo=react&logoColor=white)
 ![TypeScript](https://img.shields.io/badge/TYPESCRIPT-5.9-3178c6?style=for-the-badge&logo=typescript&logoColor=white)
-![Vite](https://img.shields.io/badge/VITE-8.0-646cff?style=for-the-badge&logo=vite&logoColor=white)
+![Vite](https://img.shields.io/badge/VITE-8.0-646cff?style=for-the-badge&logo=vite&logoColor=white) <br>
 ![MySQL](https://img.shields.io/badge/MYSQL-8.0-4479a1?style=for-the-badge&logo=mysql&logoColor=white)
 ![Hibernate](https://img.shields.io/badge/HIBERNATE-JPA-59666c?style=for-the-badge&logo=hibernate&logoColor=white)
 ![Flyway](https://img.shields.io/badge/FLYWAY-MIGRATIONS-cc0200?style=for-the-badge&logo=flyway&logoColor=white)
@@ -14,16 +16,21 @@
 
 **BANKAI** is built as a monorepo with a Spring Boot backend, a React + TypeScript frontend, Flyway-managed MySQL schema, and Dockerized local infrastructure. The project is designed to feel like a real banking workspace: customers apply for credit, employees review applications, approved funds are transferred to accounts, and every repayment is recorded.
 
+</div>
+<br>
+
 ## 📌 Table of Contents
 
 - [✨ Core Features](#core-features)
+- [👥 Contributors](#contributors)
 - [📸 Preview](#preview)
 - [🧰 Tech Stack](#tech-stack)
 - [🗄️ Database Schema](#database-schema)
-- [⚙️ Installation & Setup](#installation--setup)
 - [📂 Project Structure](#project-structure)
 - [🔌 Main API Surface](#main-api-surface)
-- [👥 Contributors](#contributors)
+- [⚙️ Installation & Setup](#installation--setup)
+
+<br>
 
 <a id="core-features"></a>
 ## ✨ Core Features
@@ -62,7 +69,7 @@
 | Product | Amount range | Term range | Principal step |
 | --- | --- | --- | --- |
 | Consumer loan | 1,000.00 - 40,000.00 EUR | 12 - 120 months | 5.00 EUR |
-| Mortgage loan | 3,000.00 - 500,000.00 EUR | 1 - 360 months | 500.00 EUR |
+| Mortgage loan | 3,000.00 - 500,000.00 EUR | 12 - 360 months | 500.00 EUR |
 
 - Indicative annual interest rate is calculated dynamically from product type, principal, and term.
 - Customer loan form includes a live preview of:
@@ -112,6 +119,15 @@
 - Customer dashboard with account, loan, debt, repayment, and payment history panels.
 - Employee workspace with customer onboarding and loan review tabs.
 - Responsive UI built with React, TypeScript, Vite, Axios, and React Router.
+
+<a id="contributors"></a>
+## 👥 Contributors
+
+| Contributor | Faculty number | Role | Contribution |
+| --- | --- | --- | --- |
+| **Ivan Ivanov** | F115436 | Full-stack developer | Built most of the customer dashboard and customer-facing functionality, the loan approval/rejection mechanism, the credit disbursement flow, loan preview calculations, fee calculations, indicative interest-rate mechanism, password recovery flow, BANKAI logo, Flyway migrations after `V2`, and part of the integration tests. |
+| **Plamen Kostov** | F113851 | Backend developer | Designed the backend architecture, Docker containerization, and the first two Flyway migrations. Implemented SMTP delivery for temporary onboarding passwords, the first-login password setup flow, repayment schedule visualization, and the loan repayment mechanism. |
+| **Ilian Yanev** | F115564 | UI/UX developer | Designed the landing page, About Us page, and major UI/UX improvements in the customer view. Added unit tests and completed the remaining integration test coverage. |
 
 <a id="preview"></a>
 ## 📸 Preview
@@ -215,10 +231,13 @@
 | Docker Compose | Local infrastructure |
 | MailHog | Local SMTP inbox |
 
+<br>
+
 <a id="database-schema"></a>
 ## 🗄️ Database Schema
 
 Flyway manages the schema through migrations located in `bank-system/src/main/resources/db/migration`.
+<img width="1250" height="1438" alt="BANKAI Databse Schema" src="https://github.com/user-attachments/assets/3327e70d-ec9f-4d08-aba6-52d1520e57f5" />
 
 
 
@@ -246,102 +265,6 @@ Flyway manages the schema through migrations located in `bank-system/src/main/re
 | `V4__loan_application_review_flow.sql` | Ivan Ivanov | Pending/rejected loan statuses and employee review logs. |
 | `V5__repayment_logs.sql` | Ivan Ivanov | Installment payment logging. |
 
-<a id="installation--setup"></a>
-## ⚙️ Installation & Setup
-
-### Prerequisites
-
-- Java 21
-- Node.js 20 or newer
-- npm
-- Docker Desktop
-- Git
-
-### 1. Clone the Repository
-
-```powershell
-git clone <repository-url>
-cd bank-system
-```
-
-### 2. Start MySQL and MailHog
-
-```powershell
-docker compose -f docker/docker-compose.yml up -d
-```
-
-This starts:
-
-- MySQL on `localhost:3307`
-- MailHog SMTP on `localhost:1025`
-- MailHog inbox UI on `http://localhost:8025`
-
-### 3. Configure Backend Environment
-
-```powershell
-Copy-Item "bank-system/.env.example" "bank-system/.env"
-```
-
-The default local values are ready for the provided Docker Compose setup.
-
-| Variable | Purpose |
-| --- | --- |
-| `SPRING_DATASOURCE_URL` | JDBC URL for MySQL. |
-| `SPRING_DATASOURCE_USERNAME` | Database username. |
-| `SPRING_DATASOURCE_PASSWORD` | Database password. |
-| `APP_ADMIN_SECRET` | Secret required by the admin onboarding endpoints. |
-| `BOOTSTRAP_EMPLOYEE_EMAIL` | Initial employee login email. |
-| `BOOTSTRAP_EMPLOYEE_PASSWORD` | Initial employee login password. |
-| `JWT_SECRET_BASE64` | JWT signing secret. |
-| `MAIL_HOST`, `MAIL_PORT` | SMTP server used for temporary password and reset emails. |
-| `MAIL_SMTP_AUTH`, `MAIL_SMTP_STARTTLS`, `MAIL_SMTP_SSL` | SMTP security flags. Keep them `false` for local MailHog. |
-| `APP_MAIL_FROM` | Sender address for system emails. |
-
-### 4. Run the Backend
-
-```powershell
-cd bank-system
-.\gradlew.bat bootRun
-```
-
-The API starts on `http://localhost:8080`. Flyway runs automatically on startup.
-
-### 5. Run the Frontend
-
-Open a second terminal:
-
-```powershell
-cd bank-frontend
-npm install
-npm run dev
-```
-
-The frontend starts on `http://localhost:5173`.
-
-### 6. Check Local Emails
-
-Open MailHog after onboarding a customer or requesting a password reset:
-
-```text
-http://localhost:8025
-```
-
-Temporary passwords and reset links will be captured there in local development.
-
-### 7. Useful Commands
-
-```powershell
-# Backend tests
-cd bank-system
-.\gradlew.bat test
-
-# Frontend build
-cd bank-frontend
-npm run build
-
-# Stop local infrastructure
-docker compose -f docker/docker-compose.yml down
-```
 
 <a id="project-structure"></a>
 ## 📂 Project Structure
@@ -392,15 +315,100 @@ bank-system/
 | Employee loans | `POST` | `/api/employee/loans/applications/{loanId}/reject` | Reject pending application. |
 | Employee loans | `GET` | `/api/employee/loans/applications/history` | Load employee loan review history. |
 
-<a id="contributors"></a>
-## 👥 Contributors
 
-| Contributor | Faculty number | Role | Contribution |
-| --- | --- | --- | --- |
-| **Ivan Ivanov** | F115436 | Full-stack developer | Built most of the customer dashboard and customer-facing functionality, the loan approval/rejection mechanism, the credit disbursement flow, loan preview calculations, fee calculations, indicative interest-rate mechanism, password recovery flow, BANKAI logo, Flyway migrations after `V2`, and part of the integration tests. |
-| **Plamen Kostov** | F113851 | Backend developer | Designed the backend architecture, Docker containerization, and the first two Flyway migrations. Implemented SMTP delivery for temporary onboarding passwords, the first-login password setup flow, repayment schedule visualization, and the loan repayment mechanism. |
-| **Ilian Yanev** | F115564 | UI/UX developer | Designed the landing page, About Us page, and major UI/UX improvements in the customer view. Added unit tests and completed the remaining integration test coverage. |
+<a id="installation--setup"></a>
+## ⚙️ Installation & Setup
 
-## 📄 License
+### Prerequisites
 
-This project is distributed under the license included in the repository.
+- Java 21
+- Node.js 20 or newer
+- npm
+- Docker Desktop
+- Git
+
+### 1. Clone the Repository
+
+```powershell
+git clone https://github.com/ITIvanov18/bank-system
+cd bank-system
+```
+
+### 2. Start MySQL and MailHog
+
+```powershell
+docker compose -f docker/docker-compose.yml up -d
+```
+
+This starts:
+
+- MySQL on `localhost:3307`
+- MailHog SMTP on `localhost:1025`
+- MailHog inbox UI on `http://localhost:8025`
+
+### 3. Configure Backend Environment
+
+```powershell
+Copy-Item "bank-system/.env.example" "bank-system/.env"
+```
+
+The default local values are ready for the provided Docker Compose setup.
+
+| Variable | Purpose |
+| --- | --- |
+| `SPRING_DATASOURCE_URL` | JDBC URL for MySQL. |
+| `SPRING_DATASOURCE_USERNAME` | Database username. |
+| `SPRING_DATASOURCE_PASSWORD` | Database password. |
+| `APP_ADMIN_SECRET` | Secret required by the admin onboarding endpoints. |
+| `BOOTSTRAP_EMPLOYEE_EMAIL` | Initial employee login email. |
+| `BOOTSTRAP_EMPLOYEE_PASSWORD` | Initial employee login password. |
+| `JWT_SECRET_BASE64` | JWT signing secret. |
+| `MAIL_HOST`, `MAIL_PORT` | SMTP server used for temporary password and reset emails. |
+| `MAIL_SMTP_AUTH`, `MAIL_SMTP_STARTTLS`, `MAIL_SMTP_SSL` | SMTP security flags. Keep them `false` for local MailHog. |
+| `APP_MAIL_FROM` | Sender address for system emails. |
+
+### 4. Run the Backend
+
+```powershell
+cd bank-system
+.\gradlew.bat bootRun
+```
+
+### 5. Run the Frontend
+
+Open a second terminal:
+
+```powershell
+cd bank-frontend
+npm install
+npm run dev
+```
+
+The frontend starts on `http://localhost:5173`.
+
+### 6. Check Local Emails
+
+Open MailHog after onboarding a customer or requesting a password reset:
+
+```text
+http://localhost:8025
+```
+
+Temporary passwords and reset links will be captured there in local development.
+
+### 7. Useful Commands
+
+```powershell
+# Backend tests
+cd bank-system
+.\gradlew.bat test
+
+# Frontend build
+cd bank-frontend
+npm run build
+
+# Stop local infrastructure
+docker compose -f docker/docker-compose.yml down
+```
+
+
