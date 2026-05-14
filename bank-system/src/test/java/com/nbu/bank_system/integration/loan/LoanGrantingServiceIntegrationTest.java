@@ -66,8 +66,8 @@ class LoanGrantingServiceIntegrationTest {
     @Test
     void testIntegration_GrantLoan_Success() {
 
-        IndividualCustomer customer = new IndividualCustomer("Ivan", "Ivanov", "9001010000");
-        customer.assignOnlineBankingCredentials("ivan@bank.bg", "hash123", true, UserRole.CUSTOMER);
+        IndividualCustomer customer = new IndividualCustomer("Friedrich", "Younes", "9001010000");
+        customer.assignOnlineBankingCredentials("Younes@bankai.bg", "hash123", true, UserRole.CUSTOMER);
         customer = customerRepository.saveAndFlush(customer);
 
         BankAccount account = new BankAccount(

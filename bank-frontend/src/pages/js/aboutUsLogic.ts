@@ -1,18 +1,18 @@
 export const teamMembers = [
   {
-    name: 'Friedrich Younes',
+    name: 'Ivan Ivanov',
     role: 'CEO & Founder',
-    image: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTGTlsdXCCTU97PX7Pc9QRY-J5OB2X91DoXDQ&s'
+    image: 'https://avatars.githubusercontent.com/u/59703243?v=4'
+  },
+  {
+    name: 'Friedrich Younes',
+    role: 'Chief Operating Officer',
+    image: 'https://bpi.com/wp-content/uploads/2018/07/024_BofA_Brian_Moynihantoned_4X6_Portrait_Bio.jpg'
   },
   {
     name: 'Plamen Kostov',
     role: 'Full-Stack Developer',
     image: 'https://avatars.githubusercontent.com/u/56884945?v=4'
-  },
-  {
-    name: 'Ivan Ivanov',
-    role: 'Chief Security Officer',
-    image: 'https://avatars.githubusercontent.com/u/59703243?v=4'
   },
   {
     name: 'Ilian Yanev',

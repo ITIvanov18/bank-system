@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState, type FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getCustomerAccountStatus, openCustomerAccount } from '../api/account';
 import { extractApiErrorMessage } from '../api/http';
-import { getLatestCustomerLoanApplication, submitLoanApplication, getAllCustomerLoans, repayInstallment } from '../api/loan';
+import { getLatestCustomerLoanApplication, submitLoanApplication, getAllCustomerLoans } from '../api/loan';
 import type { AccountStatusResponse, CustomerLoanApplicationStatusResponse, LoanApplicationResponse, InstallmentPaymentLogResponse } from '../types/auth';
 import { clearSession, getSession } from '../utils/authStorage';
 import {
